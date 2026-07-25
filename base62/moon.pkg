@@ -1,0 +1,4 @@
+// base62: the URL-safe 0-9A-Za-z alphabet over the generic basex core.
+import {
+  "Lfan-ke/basex",
+}
