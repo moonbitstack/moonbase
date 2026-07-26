@@ -1,0 +1,4 @@
+// base36: dense case-insensitive alphanumerics (0-9a-z) over the basex core.
+import {
+  "Lfan-ke/basex",
+}

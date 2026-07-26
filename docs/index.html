@@ -1,0 +1,93 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>basex — MoonBit API</title><style>
+:root{--bg:#fbfcfe;--fg:#1a2230;--muted:#5b6b82;--card:#ffffff;--line:#e6ebf2;
+--accent:#7c5cff;--code-bg:#f3f5f9;--kind:#0a7c5a;--sig:#243049}
+@media (prefers-color-scheme:dark){:root{--bg:#0f131a;--fg:#e7edf6;--muted:#98a6bd;
+--card:#161c26;--line:#242c39;--accent:#a892ff;--code-bg:#1b222e;--kind:#4fd6a6;--sig:#d6deea}}
+*{box-sizing:border-box}html{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+line-height:1.55;color:var(--fg);background:var(--bg)}body{margin:0}
+code,pre{font-family:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace}
+.wrap{max-width:920px;margin:0 auto;padding:2.6rem 1.3rem 4rem}
+header h1{font-size:2.2rem;margin:0 0 .3rem;letter-spacing:-.02em}
+.tag{color:var(--muted);font-size:1.05rem;margin:0 0 1.2rem}
+.badges a{display:inline-block;margin:0 .4rem .4rem 0}
+.install{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin:1.2rem 0 2rem}
+.install code{font-size:.95rem}
+nav.toc{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 2rem}
+nav.toc a{text-decoration:none;color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:.25rem .8rem;font-size:.9rem}
+section.pkg{border-top:1px solid var(--line);padding-top:1.6rem;margin-top:2rem}
+section.pkg h2{font-size:1.5rem;margin:0 0 .2rem}
+section.pkg h2 .at{color:var(--accent)}
+.pdesc{color:var(--muted);margin:.1rem 0 1.2rem}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.15rem;margin:.9rem 0;overflow-x:auto}
+.item .kind{display:inline-block;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--kind);margin-bottom:.35rem}
+.item pre{margin:0 0 .55rem;color:var(--sig);font-size:.98rem;white-space:pre-wrap;word-break:break-word}
+.item p{margin:0;color:var(--fg)}
+.item p code{background:var(--code-bg);padding:.05rem .3rem;border-radius:5px;font-size:.9em}
+footer{color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);margin-top:3rem;padding-top:1.2rem}
+a{color:var(--accent)}
+</style></head><body><div class="wrap">
+<header><h1>basex</h1>
+<p class="tag">base16 / base58 / base62 / base64 encoding for MoonBit — RFC 4648 hex &amp; base64, plus a generic base-N core.</p>
+<div class="badges">
+<a href="https://github.com/Lfan-ke/basex-moonbit">GitHub</a> ·
+<a href="https://mooncakes.io/docs/Lfan-ke/basex">mooncakes</a> ·
+<span>Apache-2.0 © Leo Cheng</span></div>
+<div class="install"><code>moon add Lfan-ke/basex</code></div></header>
+<nav class="toc">
+<a href="#basex">@basex</a>
+<a href="#base16">@base16</a>
+<a href="#base32">@base32</a>
+<a href="#base36">@base36</a>
+<a href="#base58">@base58</a>
+<a href="#base62">@base62</a>
+<a href="#base64">@base64</a>
+</nav>
+<section class="pkg" id="basex"><h2><span class="at">@</span>basex</h2><p class="pdesc">Generic positional base-N core. base36/base58/base62 pin an alphabet onto it.</p>
+<div class="item"><span class="kind">struct</span><pre>struct Alphabet</pre><p>An ordered set of digit characters defining a positional numeral system. The character at index <code>i</code> is the digit of value <code>i</code>, so the first character is always the zero digit. Build one with [<code>Alphabet::new</code>] and hand it to [<code>encode</code>] / [<code>decode</code>]; the <code>base58</code> and <code>base62</code> packages are thin wrappers that pin a specific alphabet.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn Alphabet::new(chars : String) -&gt; Alphabet</pre><p>Build an [<code>Alphabet</code>] from its ordered digit characters, e.g. <code>Alphabet::new(&quot;0123456789abcdef&quot;)</code> for lowercase hexadecimal. Aborts when a character repeats or is not ASCII, since either makes the mapping ambiguous.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn Alphabet::base(self : Alphabet) -&gt; Int</pre><p>The radix of this alphabet — the number of distinct digits.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn Alphabet::char_of(self : Alphabet, v : Int) -&gt; Char</pre><p>The character for digit value <code>v</code>, where <code>0 &lt;= v &lt; base</code>.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn Alphabet::value_of(self : Alphabet, c : Char) -&gt; Int?</pre><p>The digit value of <code>c</code> in this alphabet, or <code>None</code> if <code>c</code> is not one of its characters.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode(input : Bytes, alphabet : Alphabet) -&gt; String</pre><p>Encode raw bytes to a string over <code>alphabet</code>. Leading zero bytes map to leading zero-digit characters; the rest is read as a big-endian integer and rewritten in the target base. Round-trips with [<code>decode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode(input : String, alphabet : Alphabet) -&gt; Bytes?</pre><p>Decode a string over <code>alphabet</code> back to the original bytes. Returns <code>None</code> if <code>input</code> holds any character outside <code>alphabet</code>. Round-trips with [<code>encode</code>].</p></div>
+</section>
+<section class="pkg" id="base16"><h2><span class="at">@</span>base16</h2><p class="pdesc">RFC 4648 hexadecimal — byte-oriented (two chars per byte).</p>
+<div class="item"><span class="kind">fn</span><pre>fn encode(input : Bytes) -&gt; String</pre><p>Encode bytes as lower-case hexadecimal (RFC 4648 §8). Each byte becomes exactly two characters, so a leading <code>0x00</code> is kept as <code>&quot;00&quot;</code> — unlike a big-integer base conversion, which drops leading zeros. Round-trips with [<code>decode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode_upper(input : Bytes) -&gt; String</pre><p>Encode bytes as upper-case hexadecimal — the canonical spelling in RFC 4648. Round-trips with [<code>decode</code>], which accepts either case.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode(input : String) -&gt; Bytes?</pre><p>Decode a hexadecimal string back to bytes. Upper- and lower-case digits are both accepted. Returns <code>None</code> when the length is odd or a character is not a hex digit, so it doubles as validation. Round-trips with [<code>encode</code>].</p></div>
+</section>
+<section class="pkg" id="base32"><h2><span class="at">@</span>base32</h2><p class="pdesc">RFC 4648 base32 (A-Z2-7) and base32hex (0-9A-V).</p>
+<div class="item"><span class="kind">fn</span><pre>fn encode(input : Bytes) -&gt; String</pre><p>Encode bytes as standard base32 (RFC 4648 §6): the <code>A-Z2-7</code> alphabet, padded with <code>=</code> to a multiple of eight characters. Round-trips with [<code>decode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode_hex(input : Bytes) -&gt; String</pre><p>Encode bytes as base32hex (RFC 4648 §7): the extended-hex <code>0-9A-V</code> alphabet, which preserves sort order. Padded with <code>=</code>. Round-trips with [<code>decode_hex</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode(input : String) -&gt; Bytes?</pre><p>Decode a standard base32 string (RFC 4648 §6). Trailing <code>=</code> padding is optional. Returns <code>None</code> on an out-of-alphabet character or an impossible length. Round-trips with [<code>encode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode_hex(input : String) -&gt; Bytes?</pre><p>Decode a base32hex string (RFC 4648 §7, <code>0-9A-V</code>). Padding is optional. Round-trips with [<code>encode_hex</code>].</p></div>
+</section>
+<section class="pkg" id="base36"><h2><span class="at">@</span>base36</h2><p class="pdesc">Dense case-insensitive 0-9a-z over the base-N core, with an integer mode.</p>
+<div class="item"><span class="kind">let</span><pre>let alphabet : @basex.Alphabet = @basex.Alphabet::new(</pre><p>The base36 alphabet: the decimal digits followed by the lower-case letters. base36 is the densest encoding that stays case-insensitive and purely alphanumeric, which is why it is a common choice for human-facing short ids.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode(input : Bytes) -&gt; String</pre><p>Encode bytes as a base36 string. Round-trips with [<code>decode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode(input : String) -&gt; Bytes?</pre><p>Decode a base36 string back to bytes, or <code>None</code> on a character outside the alphabet. Round-trips with [<code>encode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode_uint(value : UInt64) -&gt; String</pre><p>Encode an unsigned integer as base36 — the same text JavaScript&#x27;s <code>n.toString(36)</code> produces (<code>123456789</code> becomes <code>&quot;21i3v9&quot;</code>). Zero encodes to <code>&quot;0&quot;</code>. Round-trips with [<code>decode_uint</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode_uint(input : String) -&gt; UInt64?</pre><p>Decode a base36 string produced by [<code>encode_uint</code>] back to an unsigned integer. Returns <code>None</code> for an empty string or a character outside the alphabet. Values beyond <code>UInt64::max_value</code> wrap, so keep ids within range.</p></div>
+</section>
+<section class="pkg" id="base58"><h2><span class="at">@</span>base58</h2><p class="pdesc">The Bitcoin / IPFS alphabet over the base-N core.</p>
+<div class="item"><span class="kind">let</span><pre>let alphabet : @basex.Alphabet = @basex.Alphabet::new(</pre><p>The base58 alphabet used by Bitcoin and IPFS. It leaves out the four characters that are easy to confuse by eye — <code>0</code> (zero), <code>O</code>, <code>I</code>, and <code>l</code> — so an encoded string survives being read aloud or copied by hand.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode(input : Bytes) -&gt; String</pre><p>Encode bytes as a base58 string. Round-trips with [<code>decode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode(input : String) -&gt; Bytes?</pre><p>Decode a base58 string back to bytes, or <code>None</code> when it holds a character outside the alphabet.</p></div>
+</section>
+<section class="pkg" id="base62"><h2><span class="at">@</span>base62</h2><p class="pdesc">URL-safe 0-9A-Za-z over the base-N core, with an integer mode.</p>
+<div class="item"><span class="kind">let</span><pre>let alphabet : @basex.Alphabet = @basex.Alphabet::new(</pre><p>The standard base62 alphabet: the decimal digits, then the upper-case letters, then the lower-case letters. Every character is URL-safe, which is why base62 is the usual choice for shortened links and opaque public ids.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode(input : Bytes) -&gt; String</pre><p>Encode bytes as a base62 string. Round-trips with [<code>decode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode(input : String) -&gt; Bytes?</pre><p>Decode a base62 string back to bytes, or <code>None</code> when it holds a character outside the alphabet.</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode_uint(value : UInt64) -&gt; String</pre><p>Encode an unsigned integer as base62 — the compact form a URL shortener gives a numeric id (<code>123456789</code> becomes <code>&quot;8M0kX&quot;</code>). Zero encodes to <code>&quot;0&quot;</code>. Round-trips with [<code>decode_uint</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode_uint(input : String) -&gt; UInt64?</pre><p>Decode a base62 string produced by [<code>encode_uint</code>] back to an unsigned integer. Returns <code>None</code> for an empty string or an out-of-alphabet character. Values beyond <code>UInt64::max_value</code> wrap, so keep ids within range.</p></div>
+</section>
+<section class="pkg" id="base64"><h2><span class="at">@</span>base64</h2><p class="pdesc">RFC 4648 standard (+/) and URL-safe (-_) base64.</p>
+<div class="item"><span class="kind">fn</span><pre>fn encode(input : Bytes) -&gt; String</pre><p>Encode bytes as standard base64 (RFC 4648 §4): the <code>+/</code> alphabet, padded with <code>=</code> to a multiple of four characters. Round-trips with [<code>decode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn encode_url(input : Bytes) -&gt; String</pre><p>Encode bytes as URL-safe base64 (RFC 4648 §5): the <code>-_</code> alphabet with no padding, so the result is safe inside URLs and file names. Round-trips with [<code>decode_url</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode(input : String) -&gt; Bytes?</pre><p>Decode a standard base64 string (RFC 4648 §4). Trailing <code>=</code> padding is optional. Returns <code>None</code> on any character outside the alphabet or an impossible length. Round-trips with [<code>encode</code>].</p></div>
+<div class="item"><span class="kind">fn</span><pre>fn decode_url(input : String) -&gt; Bytes?</pre><p>Decode a URL-safe base64 string (RFC 4648 §5, <code>-_</code>). Padding is optional. Round-trips with [<code>encode_url</code>].</p></div>
+</section>
+<footer>API reference generated from source doc-comments. Full package + interactive docs on <a href="https://mooncakes.io/docs/Lfan-ke/basex">mooncakes.io</a>. <a href="https://github.com/Lfan-ke/basex-moonbit">Source on GitHub</a>.</footer>
+</div></body></html>

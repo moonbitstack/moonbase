@@ -1,0 +1,2 @@
+// base32: RFC 4648 §6 standard (A-Z2-7) and §7 base32hex (0-9A-V).
+// Byte-oriented bit-packing (five bytes -> eight chars), standalone.

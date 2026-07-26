@@ -1,15 +1,15 @@
 name = "Lfan-ke/basex"
 
-version = "0.1.0"
+version = "0.2.0"
 
 readme = "README.md"
 
-repository = "https://github.com/Lfan-ke/basex"
+repository = "https://github.com/Lfan-ke/basex-moonbit"
 
 license = "Apache-2.0"
 
-keywords = [ "base58", "base62", "encoding", "bitcoin", "base-x" ]
+keywords = [ "base16", "base32", "base36", "base58", "base62", "base64" ]
 
-description = "Base58 and base62 encoding for MoonBit, built on a small generic base-N core."
+description = "base16/base32/base36/base58/base62/base64 for MoonBit — RFC 4648 hex/base32/base64 plus a big-integer base-N core behind base36/base58/base62."
 
 preferred_target = "wasm-gc"

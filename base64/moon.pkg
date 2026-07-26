@@ -1,0 +1,3 @@
+// base64: RFC 4648 §4 standard (+/, '=' padding) and §5 URL-safe (-_).
+// Byte-oriented bit-packing (three bytes -> four chars), standalone — not the
+// big-integer basex core.
