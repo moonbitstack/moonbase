@@ -11,8 +11,11 @@ code,pre{font-family:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace}
 .wrap{max-width:920px;margin:0 auto;padding:2.6rem 1.3rem 4rem}
 header h1{font-size:2.2rem;margin:0 0 .3rem;letter-spacing:-.02em}
 .tag{color:var(--muted);font-size:1.05rem;margin:0 0 1.2rem}
-.badges a{display:inline-block;margin:0 .4rem .4rem 0}
-.install{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin:1.2rem 0 2rem}
+header{padding-bottom:1.5rem;border-bottom:1px solid var(--line)}
+.badges{display:flex;flex-wrap:wrap;gap:.45rem;margin:.2rem 0 0}
+.badges img{display:block;height:20px}
+.install{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin:1.3rem 0 0;display:flex;gap:.5rem;align-items:center}
+.install .prompt{color:var(--muted);user-select:none}
 .install code{font-size:.95rem}
 nav.toc{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 2rem}
 nav.toc a{text-decoration:none;color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:.25rem .8rem;font-size:.9rem}
@@ -21,7 +24,7 @@ section.pkg h2{font-size:1.5rem;margin:0 0 .2rem}
 section.pkg h2 .at{color:var(--accent)}
 .pdesc{color:var(--muted);margin:.1rem 0 1.2rem}
 .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.15rem;margin:.9rem 0;overflow-x:auto}
-.item .kind{display:inline-block;font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--kind);margin-bottom:.35rem}
+.item .kind{display:inline-block;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--kind);background:color-mix(in oklab,var(--kind) 14%,transparent);border:1px solid color-mix(in oklab,var(--kind) 32%,transparent);border-radius:6px;padding:.08rem .42rem;margin-bottom:.5rem}
 .item pre{margin:0 0 .55rem;color:var(--sig);font-size:.98rem;white-space:pre-wrap;word-break:break-word}
 .item p{margin:0;color:var(--fg)}
 .item p code{background:var(--code-bg);padding:.05rem .3rem;border-radius:5px;font-size:.9em}
@@ -29,12 +32,13 @@ footer{color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);margi
 a{color:var(--accent)}
 </style></head><body><div class="wrap">
 <header><h1>basex</h1>
-<p class="tag">base16 / base58 / base62 / base64 encoding for MoonBit — RFC 4648 hex &amp; base64, plus a generic base-N core.</p>
+<p class="tag">base16 · base32 · base36 · base58 · base62 · base64 for MoonBit — the RFC 4648 byte codecs plus a generic base-N core.</p>
 <div class="badges">
-<a href="https://github.com/Lfan-ke/basex-moonbit">GitHub</a> ·
-<a href="https://mooncakes.io/docs/Lfan-ke/basex">mooncakes</a> ·
-<span>Apache-2.0 © Leo Cheng</span></div>
-<div class="install"><code>moon add Lfan-ke/basex</code></div></header>
+<a href="https://github.com/Lfan-ke/basex-moonbit/actions"><img src="https://img.shields.io/github/actions/workflow/status/Lfan-ke/basex-moonbit/ci.yml?branch=master&label=CI&logo=github" alt="CI"></a>
+<a href="https://mooncakes.io/docs/Lfan-ke/basex"><img src="https://img.shields.io/badge/mooncakes-Lfan--ke%2Fbasex-1f6feb" alt="mooncakes"></a>
+<a href="https://github.com/Lfan-ke/basex-moonbit"><img src="https://img.shields.io/badge/GitHub-source-24292f?logo=github" alt="GitHub"></a>
+<img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="license"></div>
+<div class="install"><span class="prompt">$</span> <code>moon add Lfan-ke/basex</code></div></header>
 <nav class="toc">
 <a href="#basex">@basex</a>
 <a href="#base16">@base16</a>

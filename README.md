@@ -1,12 +1,20 @@
+<div align="center">
+
 # basex
 
-**base16 / base32 / base36 / base58 / base62 / base64 encoding for [MoonBit](https://www.moonbitlang.com/) — the RFC 4648 byte codecs plus a small generic base-N core behind base36/base58/base62.**
+**base16 · base32 · base36 · base58 · base62 · base64 for [MoonBit](https://www.moonbitlang.com/)**
 
+The base codecs you actually reach for — the RFC 4648 byte codecs, plus a small generic base-N core behind base36/base58/base62 — each pinned to its authoritative test vectors.
+
+[![Check and Test](https://img.shields.io/github/actions/workflow/status/Lfan-ke/basex-moonbit/ci.yml?branch=master&label=CI&logo=github)](https://github.com/Lfan-ke/basex-moonbit/actions)
 [![tests](https://img.shields.io/badge/tests-20%20passing-2ea44f)](#tests)
-[![docs](https://img.shields.io/badge/docs-API-blue)](https://lfan-ke.github.io/basex-moonbit/)
+[![API docs](https://img.shields.io/badge/docs-lfan--ke.github.io-7c5cff)](https://lfan-ke.github.io/basex-moonbit/)
+[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fbasex-1f6feb)](https://mooncakes.io/docs/Lfan-ke/basex)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-`basex` turns bytes into short, copy-safe text and back. It ships the base codecs you actually reach for, each pinned to its authoritative test vectors:
+</div>
+
+`basex` turns bytes into short, copy-safe text and back.
 
 | Package | What it is | Kind |
 |---|---|---|
@@ -17,7 +25,20 @@
 | `@base62` | URL-safe `0-9A-Za-z`, plus an integer mode | big-integer base-N |
 | `@base64` | RFC 4648 standard `+/` and URL-safe `-_` | byte-oriented (3 bytes → 4 chars) |
 
-base36/base58/base62 share one `@basex` core you can also point at any alphabet of your own.
+Two implementation families, one façade:
+
+```mermaid
+flowchart LR
+    B([bytes]) --> BY["byte-oriented<br/>bit packing · RFC 4648"]
+    B --> IN["big-integer<br/>base-N conversion"]
+    BY --> b16["@base16"]
+    BY --> b32["@base32<br/><small>+ base32hex</small>"]
+    BY --> b64["@base64<br/><small>std + url-safe</small>"]
+    IN --> core(["@basex core<br/><small>any custom alphabet</small>"])
+    core --> b36["@base36"]
+    core --> b58["@base58"]
+    core --> b62["@base62"]
+```
 
 ## Install
 
@@ -98,7 +119,7 @@ RFC 4648: standard (`+/`, `=`-padded) and URL-safe (`-_`, unpadded). `decode` to
 
 ## Custom alphabets
 
-base58/base62 are thin wrappers over the `@basex` core. Build an `Alphabet` from any ordered set of ASCII characters (the first is the zero digit) and encode against it. The core reads the input as one big-endian integer and rewrites it in the target base — so for **byte-exact** hex use `@base16`, and reach for the core when you want base-N over a custom alphabet:
+base36/base58/base62 are thin wrappers over the `@basex` core. Build an `Alphabet` from any ordered set of ASCII characters (the first is the zero digit) and encode against it. The core reads the input as one big-endian integer and rewrites it in the target base — so for **byte-exact** hex use `@base16`, and reach for the core when you want base-N over a custom alphabet:
 
 ```moonbit
 let base36 = @basex.Alphabet::new("0123456789abcdefghijklmnopqrstuvwxyz")
@@ -118,7 +139,7 @@ moon test
 
 ## Documentation
 
-Full API docs: **<https://lfan-ke.github.io/basex-moonbit/>** (generated from the source with `moon doc`).
+Full API reference: **<https://lfan-ke.github.io/basex-moonbit/>** — generated from the source `///` doc-comments, so it never drifts from the code.
 
 ## License
 
