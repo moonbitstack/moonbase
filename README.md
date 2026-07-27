@@ -137,10 +137,6 @@ Correctness is pinned to published vectors: **base16 / base32 / base64 to the RF
 moon test
 ```
 
-## Documentation
-
-Full API reference: **<https://lfan-ke.github.io/basex-moonbit/>** — generated from the source `///` doc-comments, so it never drifts from the code.
-
 ## License
 
 Apache-2.0 © Leo Cheng
