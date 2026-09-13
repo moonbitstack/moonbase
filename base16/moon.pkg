@@ -1,2 +1,2 @@
 // base16: RFC 4648 hexadecimal. Byte-oriented (two chars per byte), standalone —
-// not the big-integer basex core, so every byte incl. a leading 0x00 survives.
+// not the big-integer moonbase core, so every byte incl. a leading 0x00 survives.

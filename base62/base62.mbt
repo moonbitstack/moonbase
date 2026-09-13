@@ -5,21 +5,21 @@
 /// The standard base62 alphabet: the decimal digits, then the upper-case
 /// letters, then the lower-case letters. Every character is URL-safe, which is
 /// why base62 is the usual choice for shortened links and opaque public ids.
-pub let alphabet : @basex.Alphabet = @basex.Alphabet::new(
+pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::new(
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 )
 
 ///|
 /// Encode bytes as a base62 string. Round-trips with [`decode`].
 pub fn encode(input : Bytes) -> String {
-  @basex.encode(input, alphabet)
+  @moonbase.encode(input, alphabet)
 }
 
 ///|
 /// Decode a base62 string back to bytes, or `None` when it holds a character
 /// outside the alphabet.
 pub fn decode(input : String) -> Bytes? {
-  @basex.decode(input, alphabet)
+  @moonbase.decode(input, alphabet)
 }
 
 ///|

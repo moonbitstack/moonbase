@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lfan-ke/moonbase"
+
+// Values
+pub fn decode(String, Alphabet) -> Bytes?
+
+pub fn encode(Bytes, Alphabet) -> String
+
+// Errors
+
+// Types and methods
+pub struct Alphabet {
+  digits : Array[Char]
+  lookup : Array[Int]
+  base : Int
+}
+pub fn Alphabet::base(Self) -> Int
+pub fn Alphabet::char_of(Self, Int) -> Char
+pub fn Alphabet::new(String) -> Self
+pub fn Alphabet::value_of(Self, Char) -> Int?
+
+// Type aliases
+
+// Traits

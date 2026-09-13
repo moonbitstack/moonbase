@@ -5,21 +5,21 @@
 /// The base36 alphabet: the decimal digits followed by the lower-case letters.
 /// base36 is the densest encoding that stays case-insensitive and purely
 /// alphanumeric, which is why it is a common choice for human-facing short ids.
-pub let alphabet : @basex.Alphabet = @basex.Alphabet::new(
+pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::new(
   "0123456789abcdefghijklmnopqrstuvwxyz",
 )
 
 ///|
 /// Encode bytes as a base36 string. Round-trips with [`decode`].
 pub fn encode(input : Bytes) -> String {
-  @basex.encode(input, alphabet)
+  @moonbase.encode(input, alphabet)
 }
 
 ///|
 /// Decode a base36 string back to bytes, or `None` on a character outside the
 /// alphabet. Round-trips with [`encode`].
 pub fn decode(input : String) -> Bytes? {
-  @basex.decode(input, alphabet)
+  @moonbase.decode(input, alphabet)
 }
 
 ///|

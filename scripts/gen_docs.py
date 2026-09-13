@@ -6,7 +6,7 @@ import re, html, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PKGS = [
-    ("basex", "basex.mbt", "Generic positional base-N core. base36/base58/base62 pin an alphabet onto it."),
+    ("moonbase", "moonbase.mbt", "Generic positional base-N core. base36/base58/base62 pin an alphabet onto it."),
     ("base16", "base16/base16.mbt", "RFC 4648 hexadecimal — byte-oriented (two chars per byte)."),
     ("base32", "base32/base32.mbt", "RFC 4648 base32 (A-Z2-7) and base32hex (0-9A-V)."),
     ("base36", "base36/base36.mbt", "Dense case-insensitive 0-9a-z over the base-N core, with an integer mode."),
@@ -213,36 +213,36 @@ def esc(t):
 def main():
     HEAD = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>basex — MoonBit API</title>'
+            '<title>moonbase — MoonBit API</title>'
             '<link rel="preconnect" href="https://fonts.googleapis.com">'
             '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
             '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&'
             'family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">'
             '<style>' + CSS + '</style></head><body>')
 
-    side = ['<aside class="sidebar"><div class="brand"><span class="dot"></span>basex</div>'
+    side = ['<aside class="sidebar"><div class="brand"><span class="dot"></span>moonbase</div>'
             '<p class="brand-sub">MoonBit API reference</p><nav class="side-nav">']
     side += ['<a href="#%s"><span class="at">@</span>%s</a>' % (n, n) for n, _, _ in PKGS]
     side += ['</nav>'
              '<button class="theme-btn" id="theme">◐ toggle theme</button>'
              '<div class="side-foot">'
-             '<a href="https://github.com/Lfan-ke/basex-moonbit/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Lfan-ke/basex-moonbit/ci.yml?branch=master&label=CI&logo=github"></a>'
-             '<a href="https://mooncakes.io/docs/Lfan-ke/basex"><img alt="mooncakes" src="https://img.shields.io/badge/mooncakes-Lfan--ke%2Fbasex-1f6feb"></a>'
+             '<a href="https://github.com/moonbitstack/moonbase/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/moonbitstack/moonbase/ci.yml?branch=master&label=CI&logo=github"></a>'
+             '<a href="https://mooncakes.io/docs/Lfan-ke/moonbase"><img alt="mooncakes" src="https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoonbase-1f6feb"></a>'
              '</div></aside>']
 
     pg_rows = "".join('<div class="pg-row"><span class="lbl">%s</span>'
                       '<span class="val" id="pg-%s"></span></div>' % (n, n)
                       for n in ["base16", "base32", "base36", "base58", "base62", "base64"])
-    hero = ('<main><header class="hero"><h1>basex</h1>'
+    hero = ('<main><header class="hero"><h1>moonbase</h1>'
             '<p class="tag">base16 · base32 · base36 · base58 · base62 · base64 for MoonBit — the RFC 4648 '
             'byte codecs plus a generic base-N core behind base36/base58/base62.</p>'
             '<div class="badges">'
-            '<a href="https://github.com/Lfan-ke/basex-moonbit/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Lfan-ke/basex-moonbit/ci.yml?branch=master&label=CI&logo=github"></a>'
+            '<a href="https://github.com/moonbitstack/moonbase/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/moonbitstack/moonbase/ci.yml?branch=master&label=CI&logo=github"></a>'
             '<img alt="tests" src="https://img.shields.io/badge/tests-20%20passing-0ca678">'
-            '<a href="https://github.com/Lfan-ke/basex-moonbit"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-source-24292f?logo=github"></a>'
+            '<a href="https://github.com/moonbitstack/moonbase"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-source-24292f?logo=github"></a>'
             '<img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-6d5efc"></div>'
-            '<div class="install"><span class="prompt">$</span><code>moon add Lfan-ke/basex</code>'
-            '<button class="copy" data-copy="moon add Lfan-ke/basex">copy</button></div>'
+            '<div class="install"><span class="prompt">$</span><code>moon add Lfan-ke/moonbase</code>'
+            '<button class="copy" data-copy="moon add Lfan-ke/moonbase">copy</button></div>'
             '<div class="pg"><h2><span class="spark">✦</span> Try it live</h2>'
             '<p class="hint">Type anything — encoded in the browser with the exact algorithms this library ships.</p>'
             '<input id="pg-in" value="Hello, MoonBit!" spellcheck="false" aria-label="text to encode">'
@@ -258,8 +258,8 @@ def main():
                         % (kind, kind, tint(sig), ('<p class="doc">%s</p>' % prose(doc)) if doc else ''))
         body.append('</section>')
     body.append('<footer>Generated from source <code>///</code> doc-comments · '
-                '<a href="https://mooncakes.io/docs/Lfan-ke/basex">mooncakes</a> · '
-                '<a href="https://github.com/Lfan-ke/basex-moonbit">GitHub</a> · Apache-2.0 © Leo Cheng</footer>')
+                '<a href="https://mooncakes.io/docs/Lfan-ke/moonbase">mooncakes</a> · '
+                '<a href="https://github.com/moonbitstack/moonbase">GitHub</a> · Apache-2.0 © Leo Cheng</footer>')
     body.append('</main></div><script>' + JS + '</script></body></html>')
 
     out = ROOT / "docs" / "index.html"

@@ -1,20 +1,22 @@
 <div align="center">
 
-# basex
+# moonbase
 
 **base16 · base32 · base36 · base58 · base62 · base64 for [MoonBit](https://www.moonbitlang.com/)**
 
 The base codecs you actually reach for — the RFC 4648 byte codecs, plus a small generic base-N core behind base36/base58/base62 — each pinned to its authoritative test vectors.
 
-[![Check and Test](https://img.shields.io/github/actions/workflow/status/Lfan-ke/basex-moonbit/ci.yml?branch=master&label=CI&logo=github)](https://github.com/Lfan-ke/basex-moonbit/actions)
+[![Check and Test](https://img.shields.io/github/actions/workflow/status/moonbitstack/moonbase/ci.yml?branch=master&label=CI&logo=github)](https://github.com/moonbitstack/moonbase/actions)
 [![tests](https://img.shields.io/badge/tests-20%20passing-2ea44f)](#tests)
-[![API docs](https://img.shields.io/badge/docs-lfan--ke.github.io-7c5cff)](https://lfan-ke.github.io/basex-moonbit/)
-[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fbasex-1f6feb)](https://mooncakes.io/docs/Lfan-ke/basex)
+[![API docs](https://img.shields.io/badge/docs-moonbitstack.github.io-7c5cff)](https://moonbitstack.github.io/moonbase/)
+[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoonbase-1f6feb)](https://mooncakes.io/docs/Lfan-ke/moonbase)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 </div>
 
-`basex` turns bytes into short, copy-safe text and back.
+`moonbase` turns bytes into short, copy-safe text and back.
+
+Previously published as `Lfan-ke/basex`; the repository moved from `Lfan-ke/basex-moonbit` to `moonbitstack/moonbase`.
 
 | Package | What it is | Kind |
 |---|---|---|
@@ -34,7 +36,7 @@ flowchart LR
     BY --> b16["@base16"]
     BY --> b32["@base32<br/><small>+ base32hex</small>"]
     BY --> b64["@base64<br/><small>std + url-safe</small>"]
-    IN --> core(["@basex core<br/><small>any custom alphabet</small>"])
+    IN --> core(["@moonbase core<br/><small>any custom alphabet</small>"])
     core --> b36["@base36"]
     core --> b58["@base58"]
     core --> b62["@base62"]
@@ -43,7 +45,7 @@ flowchart LR
 ## Install
 
 ```bash
-moon add Lfan-ke/basex
+moon add Lfan-ke/moonbase
 ```
 
 ## base16
@@ -119,12 +121,12 @@ RFC 4648: standard (`+/`, `=`-padded) and URL-safe (`-_`, unpadded). `decode` to
 
 ## Custom alphabets
 
-base36/base58/base62 are thin wrappers over the `@basex` core. Build an `Alphabet` from any ordered set of ASCII characters (the first is the zero digit) and encode against it. The core reads the input as one big-endian integer and rewrites it in the target base — so for **byte-exact** hex use `@base16`, and reach for the core when you want base-N over a custom alphabet:
+base36/base58/base62 are thin wrappers over the `@moonbase` core. Build an `Alphabet` from any ordered set of ASCII characters (the first is the zero digit) and encode against it. The core reads the input as one big-endian integer and rewrites it in the target base — so for **byte-exact** hex use `@base16`, and reach for the core when you want base-N over a custom alphabet:
 
 ```moonbit
-let base36 = @basex.Alphabet::new("0123456789abcdefghijklmnopqrstuvwxyz")
-@basex.encode(b"\xde\xad\xbe\xef", base36) // -> a base36 string
-@basex.decode("...", base36)               // -> Some(bytes) / None
+let base36 = @moonbase.Alphabet::new("0123456789abcdefghijklmnopqrstuvwxyz")
+@moonbase.encode(b"\xde\xad\xbe\xef", base36) // -> a base36 string
+@moonbase.decode("...", base36)               // -> Some(bytes) / None
 ```
 
 `decode` returns `None` on any character outside the alphabet, so it doubles as validation.

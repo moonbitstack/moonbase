@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lfan-ke/moonbase/base36"
+
+import {
+  "Lfan-ke/moonbase",
+}
+
+// Values
+pub let alphabet : @moonbase.Alphabet
+
+pub fn decode(String) -> Bytes?
+
+pub fn decode_uint(String) -> UInt64?
+
+pub fn encode(Bytes) -> String
+
+pub fn encode_uint(UInt64) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

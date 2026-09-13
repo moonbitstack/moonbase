@@ -25,14 +25,14 @@ pub fn Alphabet::new(chars : String) -> Alphabet {
   for i in 0..<base {
     let code = digits[i].to_int()
     if code >= 128 {
-      abort("basex: alphabet characters must be ASCII")
+      abort("moonbase: alphabet characters must be ASCII")
     }
     if lookup[code] != -1 {
-      abort("basex: duplicate alphabet character")
+      abort("moonbase: duplicate alphabet character")
     }
     lookup[code] = i
   }
-  { digits, lookup, base }
+  { digits, lookup, base, }
 }
 
 ///|

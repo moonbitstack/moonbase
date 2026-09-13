@@ -1,10 +1,10 @@
-name = "Lfan-ke/basex"
+name = "Lfan-ke/moonbase"
 
-version = "0.2.0"
+version = "0.3.0"
 
 readme = "README.md"
 
-repository = "https://github.com/Lfan-ke/basex-moonbit"
+repository = "https://github.com/moonbitstack/moonbase"
 
 license = "Apache-2.0"
 
