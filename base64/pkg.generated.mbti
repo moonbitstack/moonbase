@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "Lfan-ke/moonbase/base64"
+package "moonbitstack/moonbase/base64"
 
 // Values
 pub fn decode(String) -> Bytes?

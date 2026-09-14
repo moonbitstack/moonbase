@@ -9,10 +9,12 @@ The base codecs you actually reach for — the RFC 4648 byte codecs, plus a smal
 [![Check and Test](https://img.shields.io/github/actions/workflow/status/moonbitstack/moonbase/ci.yml?branch=master&label=CI&logo=github)](https://github.com/moonbitstack/moonbase/actions)
 [![tests](https://img.shields.io/badge/tests-20%20passing-2ea44f)](#tests)
 [![API docs](https://img.shields.io/badge/docs-moonbitstack.github.io-7c5cff)](https://moonbitstack.github.io/moonbase/)
-[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoonbase-1f6feb)](https://mooncakes.io/docs/Lfan-ke/moonbase)
+[![mooncakes](https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoonbase-1f6feb)](https://mooncakes.io/docs/moonbitstack/moonbase)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 </div>
+
+> Moved on mooncakes from `Lfan-ke/moonbase` to `moonbitstack/moonbase`.
 
 `moonbase` turns bytes into short, copy-safe text and back.
 
@@ -45,7 +47,7 @@ flowchart LR
 ## Install
 
 ```bash
-moon add Lfan-ke/moonbase
+moon add moonbitstack/moonbase
 ```
 
 ## base16

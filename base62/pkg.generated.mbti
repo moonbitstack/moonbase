@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "Lfan-ke/moonbase/base62"
+package "moonbitstack/moonbase/base62"
 
 import {
-  "Lfan-ke/moonbase",
+  "moonbitstack/moonbase",
 }
 
 // Values

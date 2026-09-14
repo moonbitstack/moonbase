@@ -1,4 +1,4 @@
 // base58: the Bitcoin / IPFS alphabet over the generic moonbase core.
 import {
-  "Lfan-ke/moonbase",
+  "moonbitstack/moonbase",
 }

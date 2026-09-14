@@ -227,7 +227,7 @@ def main():
              '<button class="theme-btn" id="theme">◐ toggle theme</button>'
              '<div class="side-foot">'
              '<a href="https://github.com/moonbitstack/moonbase/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/moonbitstack/moonbase/ci.yml?branch=master&label=CI&logo=github"></a>'
-             '<a href="https://mooncakes.io/docs/Lfan-ke/moonbase"><img alt="mooncakes" src="https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoonbase-1f6feb"></a>'
+             '<a href="https://mooncakes.io/docs/moonbitstack/moonbase"><img alt="mooncakes" src="https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoonbase-1f6feb"></a>'
              '</div></aside>']
 
     pg_rows = "".join('<div class="pg-row"><span class="lbl">%s</span>'
@@ -241,8 +241,8 @@ def main():
             '<img alt="tests" src="https://img.shields.io/badge/tests-20%20passing-0ca678">'
             '<a href="https://github.com/moonbitstack/moonbase"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-source-24292f?logo=github"></a>'
             '<img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-6d5efc"></div>'
-            '<div class="install"><span class="prompt">$</span><code>moon add Lfan-ke/moonbase</code>'
-            '<button class="copy" data-copy="moon add Lfan-ke/moonbase">copy</button></div>'
+            '<div class="install"><span class="prompt">$</span><code>moon add moonbitstack/moonbase</code>'
+            '<button class="copy" data-copy="moon add moonbitstack/moonbase">copy</button></div>'
             '<div class="pg"><h2><span class="spark">✦</span> Try it live</h2>'
             '<p class="hint">Type anything — encoded in the browser with the exact algorithms this library ships.</p>'
             '<input id="pg-in" value="Hello, MoonBit!" spellcheck="false" aria-label="text to encode">'
@@ -258,7 +258,7 @@ def main():
                         % (kind, kind, tint(sig), ('<p class="doc">%s</p>' % prose(doc)) if doc else ''))
         body.append('</section>')
     body.append('<footer>Generated from source <code>///</code> doc-comments · '
-                '<a href="https://mooncakes.io/docs/Lfan-ke/moonbase">mooncakes</a> · '
+                '<a href="https://mooncakes.io/docs/moonbitstack/moonbase">mooncakes</a> · '
                 '<a href="https://github.com/moonbitstack/moonbase">GitHub</a> · Apache-2.0 © Leo Cheng</footer>')
     body.append('</main></div><script>' + JS + '</script></body></html>')
 
