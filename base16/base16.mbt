@@ -11,6 +11,12 @@ pub(all) enum Kind {
 } derive(Eq, Debug)
 
 ///|
+pub extend Kind with Eq::{equal, not_equal}
+
+///|
+pub extend Kind with Debug::{to_repr}
+
+///|
 /// Encode bytes as hexadecimal (RFC 4648 §8).
 ///
 /// Each byte becomes exactly two characters, so a leading `0x00` stays `"00"`

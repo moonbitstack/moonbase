@@ -10,6 +10,12 @@ pub(all) enum Kind {
 } derive(Eq, Debug)
 
 ///|
+pub extend Kind with Eq::{equal, not_equal}
+
+///|
+pub extend Kind with Debug::{to_repr}
+
+///|
 /// Encode bytes as base64 (RFC 4648 §4, or §5 with `kind=Url`).
 ///
 /// A JWT wants `kind=Url, padding=false`; an HTTP Basic credential wants the

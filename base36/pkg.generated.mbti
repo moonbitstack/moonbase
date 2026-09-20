@@ -32,6 +32,9 @@ pub(all) enum Kind {
   Lower
   Upper
 } derive(Eq, @debug.Debug)
+pub fn Kind::equal(Self, Self) -> Bool
+pub fn Kind::not_equal(Self, Self) -> Bool
+pub fn Kind::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

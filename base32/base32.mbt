@@ -10,6 +10,12 @@ pub(all) enum Kind {
 } derive(Eq, Debug)
 
 ///|
+pub extend Kind with Eq::{equal, not_equal}
+
+///|
+pub extend Kind with Debug::{to_repr}
+
+///|
 /// Encode bytes as base32 (RFC 4648 §6, or §7 with `kind=Hex`).
 ///
 /// Padded to a multiple of eight characters unless told otherwise.

@@ -20,6 +20,12 @@ pub(all) suberror Malformed {
 } derive(Eq, Debug)
 
 ///|
+pub extend Malformed with Eq::{equal, not_equal}
+
+///|
+pub extend Malformed with Debug::{to_repr}
+
+///|
 /// Why an alphabet could not be built.
 ///
 /// Separate from [`Malformed`] on purpose: a malformed input is the caller's
@@ -32,3 +38,9 @@ pub(all) suberror BadAlphabet {
   /// Fewer than two digits, which is not a positional system.
   TooFew(count~ : Int)
 } derive(Eq, Debug)
+
+///|
+pub extend BadAlphabet with Eq::{equal, not_equal}
+
+///|
+pub extend BadAlphabet with Debug::{to_repr}

@@ -9,6 +9,12 @@ pub(all) enum Kind {
 } derive(Eq, Debug)
 
 ///|
+pub extend Kind with Eq::{equal, not_equal}
+
+///|
+pub extend Kind with Debug::{to_repr}
+
+///|
 /// The lower-case alphabet, which is the one everything defaults to.
 pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::of(
   "0123456789abcdefghijklmnopqrstuvwxyz",

@@ -42,6 +42,9 @@ pub(all) suberror BadAlphabet {
   Repeated(at~ : Int, char~ : Char)
   TooFew(count~ : Int)
 } derive(Eq, @debug.Debug)
+pub fn BadAlphabet::equal(Self, Self) -> Bool
+pub fn BadAlphabet::not_equal(Self, Self) -> Bool
+pub fn BadAlphabet::to_repr(Self) -> @debug.Repr
 
 pub(all) suberror Malformed {
   Bad(at~ : Int, char~ : Char)
@@ -49,6 +52,9 @@ pub(all) suberror Malformed {
   Padding(at~ : Int)
   Checksum(at~ : Int)
 } derive(Eq, @debug.Debug)
+pub fn Malformed::equal(Self, Self) -> Bool
+pub fn Malformed::not_equal(Self, Self) -> Bool
+pub fn Malformed::to_repr(Self) -> @debug.Repr
 
 // Types and methods
 pub struct Alphabet {
