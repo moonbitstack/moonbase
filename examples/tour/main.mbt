@@ -26,6 +26,11 @@ fn main {
   println(@base36.encode_int(123456789))
   println(@base62.encode_int(123456789))
 
+  // Any positional system at all, given its digits. Crockford's base32 leaves
+  // out the letters a human confuses with digits.
+  let crockford = @moonbase.Alphabet::of("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
+  println(@moonbase.encode(raw[:], crockford))
+
   // A failure says what was wrong and where, rather than just "no".
   try @base64.decode("Zm*vYg==") catch {
     failure =>
