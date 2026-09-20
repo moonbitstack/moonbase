@@ -2,22 +2,52 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
-/// The base58 alphabet used by Bitcoin and IPFS. It leaves out the four
-/// characters that are easy to confuse by eye — `0` (zero), `O`, `I`, and `l`
-/// — so an encoded string survives being read aloud or copied by hand.
-pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::new(
+/// The alphabet this encoding pins.
+pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::of(
   "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
 )
 
 ///|
-/// Encode bytes as a base58 string. Round-trips with [`decode`].
-pub fn encode(input : Bytes) -> String {
+/// Encode bytes. Leading zero bytes become leading zero digits; the rest is
+/// read as one big-endian integer and rewritten in this base.
+pub fn encode(input : BytesView) -> String {
   @moonbase.encode(input, alphabet)
 }
 
 ///|
-/// Decode a base58 string back to bytes, or `None` when it holds a character
-/// outside the alphabet.
-pub fn decode(input : String) -> Bytes? {
+/// The same encoding, as the ASCII bytes it would be written with.
+pub fn encode_bytes(input : BytesView) -> Bytes {
+  @moonbase.encode_bytes(input, alphabet)
+}
+
+///|
+/// Decode back to bytes. Fails at the first character outside the alphabet,
+/// naming where it was.
+pub fn decode(input : StringView) -> Bytes raise @moonbase.Malformed {
   @moonbase.decode(input, alphabet)
+}
+
+///|
+/// Decode from ASCII bytes, for callers who never had a string.
+pub fn decode_bytes(input : BytesView) -> Bytes raise @moonbase.Malformed {
+  @moonbase.decode_bytes(input, alphabet)
+}
+
+///|
+/// Decode, skipping anything outside the alphabet.
+pub fn decode_lossy(input : StringView) -> Bytes {
+  @moonbase.decode_lossy(input, alphabet)
+}
+
+///|
+/// Write a whole number in this base. Unlike the byte faces, this one has no
+/// leading-zero rule: a number has no leading zeros to preserve.
+pub fn encode_int(value : UInt64) -> String {
+  @moonbase.encode_int(value, alphabet)
+}
+
+///|
+/// Read a whole number in this base.
+pub fn decode_int(input : StringView) -> UInt64 raise @moonbase.Malformed {
+  @moonbase.decode_int(input, alphabet)
 }

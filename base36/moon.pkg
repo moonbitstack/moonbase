@@ -1,4 +1,8 @@
-// base36: dense case-insensitive alphanumerics (0-9a-z) over the moonbase core.
+// base36, the multibase `k` and `K` spellings: https://github.com/multiformats/multibase
+//
+// A big-integer conversion, so the integer faces are the natural ones and the
+// byte faces keep leading zeros by spelling them as leading zero digits.
+
 import {
   "moonbitstack/moonbase",
 }

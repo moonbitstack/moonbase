@@ -1,0 +1,12 @@
+// A tour of the six encodings and the five faces each of them has.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/base16",
+  "moonbitstack/moonbase/base32",
+  "moonbitstack/moonbase/base36",
+  "moonbitstack/moonbase/base58",
+  "moonbitstack/moonbase/base62",
+  "moonbitstack/moonbase/base64",
+}
+
+pkgtype(kind: "executable")

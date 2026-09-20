@@ -8,9 +8,19 @@ import {
 // Values
 pub let alphabet : @moonbase.Alphabet
 
-pub fn decode(String) -> Bytes?
+pub fn decode(StringView) -> Bytes raise @moonbase.Malformed
 
-pub fn encode(Bytes) -> String
+pub fn decode_bytes(BytesView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_int(StringView) -> UInt64 raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView) -> Bytes
+
+pub fn encode(BytesView) -> String
+
+pub fn encode_bytes(BytesView) -> Bytes
+
+pub fn encode_int(UInt64) -> String
 
 // Errors
 

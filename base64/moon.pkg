@@ -1,3 +1,8 @@
-// base64: RFC 4648 §4 standard (+/, '=' padding) and §5 URL-safe (-_).
-// Byte-oriented bit-packing (three bytes -> four chars), standalone — not the
-// big-integer moonbase core.
+// base64, RFC 4648 §4: https://www.rfc-editor.org/rfc/rfc4648#section-4
+// base64url, RFC 4648 §5: https://www.rfc-editor.org/rfc/rfc4648#section-5
+//
+// Six bits a character, four characters a group. The URL-safe alphabet differs
+// in two characters and in that nobody pads it.
+import {
+  "moonbitstack/moonbase",
+}

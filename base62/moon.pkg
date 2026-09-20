@@ -1,4 +1,8 @@
-// base62: the URL-safe 0-9A-Za-z alphabet over the generic moonbase core.
+// base62, digits then upper then lower: https://en.wikipedia.org/wiki/Base62
+//
+// No RFC; the alphabet below is the one everyone means by base62, and the
+// tests pin it against hand-computed values.
+
 import {
   "moonbitstack/moonbase",
 }

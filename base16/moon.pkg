@@ -1,2 +1,7 @@
-// base16: RFC 4648 hexadecimal. Byte-oriented (two chars per byte), standalone —
-// not the big-integer moonbase core, so every byte incl. a leading 0x00 survives.
+// Hexadecimal, RFC 4648 §8: https://www.rfc-editor.org/rfc/rfc4648#section-8
+//
+// Byte-aligned, so a leading zero byte survives the round trip — which is the
+// whole reason this is not built on the big-integer core.
+import {
+  "moonbitstack/moonbase",
+}

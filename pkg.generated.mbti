@@ -1,12 +1,54 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitstack/moonbase"
 
-// Values
-pub fn decode(String, Alphabet) -> Bytes?
+import {
+  "moonbitlang/core/debug",
+}
 
-pub fn encode(Bytes, Alphabet) -> String
+// Values
+pub fn ascii(String) -> Bytes
+
+pub fn decode(StringView, Alphabet) -> Bytes raise Malformed
+
+pub fn decode_bytes(BytesView, Alphabet) -> Bytes raise Malformed
+
+pub fn decode_int(StringView, Alphabet) -> UInt64 raise Malformed
+
+pub fn decode_lossy(StringView, Alphabet) -> Bytes
+
+pub fn encode(BytesView, Alphabet) -> String
+
+pub fn encode_bytes(BytesView, Alphabet) -> Bytes
+
+pub fn encode_int(UInt64, Alphabet) -> String
+
+pub fn lookup_of(String) -> Array[Int]
+
+pub fn lookup_of_both(String, String) -> Array[Int]
+
+pub fn pack(BytesView, Int, Array[Char], Bool) -> String
+
+pub fn pack_bytes(BytesView, Int, Array[Char], Bool) -> Bytes
+
+pub fn text_of(BytesView) -> String
+
+pub fn unpack(StringView, Int, Array[Int], Bool) -> Bytes raise Malformed
+
+pub fn unpack_bytes(BytesView, Int, Array[Int], Bool) -> Bytes raise Malformed
 
 // Errors
+pub(all) suberror BadAlphabet {
+  NotAscii(at~ : Int, char~ : Char)
+  Repeated(at~ : Int, char~ : Char)
+  TooFew(count~ : Int)
+} derive(Eq, @debug.Debug)
+
+pub(all) suberror Malformed {
+  Bad(at~ : Int, char~ : Char)
+  Truncated(at~ : Int)
+  Padding(at~ : Int)
+  Checksum(at~ : Int)
+} derive(Eq, @debug.Debug)
 
 // Types and methods
 pub struct Alphabet {
@@ -16,7 +58,8 @@ pub struct Alphabet {
 }
 pub fn Alphabet::base(Self) -> Int
 pub fn Alphabet::char_of(Self, Int) -> Char
-pub fn Alphabet::new(String) -> Self
+pub fn Alphabet::new(String) -> Self raise BadAlphabet
+pub fn Alphabet::of(String) -> Self
 pub fn Alphabet::value_of(Self, Char) -> Int?
 
 // Type aliases

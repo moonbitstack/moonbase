@@ -1,2 +1,9 @@
-// base32: RFC 4648 §6 standard (A-Z2-7) and §7 base32hex (0-9A-V).
-// Byte-oriented bit-packing (five bytes -> eight chars), standalone.
+// base32, RFC 4648 §6: https://www.rfc-editor.org/rfc/rfc4648#section-6
+// base32hex, RFC 4648 §7: https://www.rfc-editor.org/rfc/rfc4648#section-7
+//
+// Five bits a character, padded to eight characters a group. The extended-hex
+// alphabet keeps byte order, which is why a sorted list of encodings is a
+// sorted list of payloads.
+import {
+  "moonbitstack/moonbase",
+}

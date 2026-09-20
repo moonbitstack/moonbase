@@ -3,7 +3,7 @@
 
 ///|
 fn bytes(values : Array[Int]) -> Bytes {
-  let out : Array[Byte] = Array::new()
+  let out : Array[Byte] = []
   for v in values {
     out.push(v.to_byte())
   }
@@ -11,37 +11,35 @@ fn bytes(values : Array[Int]) -> Bytes {
 }
 
 ///|
-test "base62 byte encoding round-trips" {
-  // 255 = 4*62 + 7, and a leading zero byte renders as the zero digit '0'.
-  assert_eq(@base62.encode(bytes([255])), "47")
-  assert_eq(@base62.encode(bytes([0, 255])), "047")
-  let samples = [
-    bytes([]),
-    bytes([0]),
-    bytes([0, 0, 1]),
-    bytes([0xde, 0xad, 0xbe, 0xef]),
-    bytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
-  ]
-  for s in samples {
-    assert_eq(@base62.decode(@base62.encode(s)), Some(s))
-  }
-}
-
-///|
+/// Hand-computed values: base62 has no RFC, so the vectors are worked out from
+/// the alphabet itself and pinned here.
 test "base62 integer encoding matches known values" {
-  assert_eq(@base62.encode_uint(0), "0")
-  assert_eq(@base62.encode_uint(61), "z")
-  assert_eq(@base62.encode_uint(62), "10")
-  assert_eq(@base62.encode_uint(3843), "zz")
-  assert_eq(@base62.encode_uint(123456789), "8M0kX")
-  let numbers : Array[UInt64] = [0, 1, 61, 62, 12345, 123456789, 9999999999]
-  for n in numbers {
-    assert_eq(@base62.decode_uint(@base62.encode_uint(n)), Some(n))
-  }
+  assert_eq(@base62.encode_int(0), "0")
+  assert_eq(@base62.encode_int(61), "z")
+  assert_eq(@base62.encode_int(62), "10")
+  assert_eq(@base62.encode_int(3843), "zz")
+  assert_eq(@base62.encode_int(123456789), "8M0kX")
+  assert_eq(@base62.decode_int("8M0kX"), 123456789)
 }
 
 ///|
-test "base62 decode_uint rejects bad input" {
-  assert_eq(@base62.decode_uint(""), None)
-  assert_eq(@base62.decode_uint("hello!"), None)
+test "byte encoding round-trips and keeps leading zeros" {
+  assert_eq(@base62.encode(bytes([255])[:]), "47")
+  assert_eq(@base62.encode(bytes([0, 255])[:]), "047")
+  assert_eq(@base62.decode("047"), bytes([0, 255]))
+  assert_eq(@base62.decode(@base62.encode(b"moonbase"[:])), b"moonbase")
+}
+
+///|
+test "bad input says what and where" {
+  try @base62.decode_int("") catch {
+    failure => assert_eq(failure, Truncated(at=0))
+  } noraise {
+    _ => fail("expected the empty string to be rejected")
+  }
+  try @base62.decode_int("hello!") catch {
+    failure => assert_eq(failure, Bad(at=5, char='!'))
+  } noraise {
+    _ => fail("expected the mark to be rejected")
+  }
 }

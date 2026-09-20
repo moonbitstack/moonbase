@@ -1,18 +1,29 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "moonbitstack/moonbase/base32"
 
+import {
+  "moonbitlang/core/debug",
+  "moonbitstack/moonbase",
+}
+
 // Values
-pub fn decode(String) -> Bytes?
+pub fn decode(StringView, kind? : Kind) -> Bytes raise @moonbase.Malformed
 
-pub fn decode_hex(String) -> Bytes?
+pub fn decode_bytes(BytesView, kind? : Kind) -> Bytes raise @moonbase.Malformed
 
-pub fn encode(Bytes) -> String
+pub fn decode_lossy(StringView, kind? : Kind) -> Bytes
 
-pub fn encode_hex(Bytes) -> String
+pub fn encode(BytesView, kind? : Kind, padding? : Bool) -> String
+
+pub fn encode_bytes(BytesView, kind? : Kind, padding? : Bool) -> Bytes
 
 // Errors
 
 // Types and methods
+pub(all) enum Kind {
+  Std
+  Hex
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 

@@ -2,63 +2,52 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
-/// The standard base62 alphabet: the decimal digits, then the upper-case
-/// letters, then the lower-case letters. Every character is URL-safe, which is
-/// why base62 is the usual choice for shortened links and opaque public ids.
-pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::new(
+/// The alphabet this encoding pins.
+pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::of(
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 )
 
 ///|
-/// Encode bytes as a base62 string. Round-trips with [`decode`].
-pub fn encode(input : Bytes) -> String {
+/// Encode bytes. Leading zero bytes become leading zero digits; the rest is
+/// read as one big-endian integer and rewritten in this base.
+pub fn encode(input : BytesView) -> String {
   @moonbase.encode(input, alphabet)
 }
 
 ///|
-/// Decode a base62 string back to bytes, or `None` when it holds a character
-/// outside the alphabet.
-pub fn decode(input : String) -> Bytes? {
+/// The same encoding, as the ASCII bytes it would be written with.
+pub fn encode_bytes(input : BytesView) -> Bytes {
+  @moonbase.encode_bytes(input, alphabet)
+}
+
+///|
+/// Decode back to bytes. Fails at the first character outside the alphabet,
+/// naming where it was.
+pub fn decode(input : StringView) -> Bytes raise @moonbase.Malformed {
   @moonbase.decode(input, alphabet)
 }
 
 ///|
-/// Encode an unsigned integer as base62 — the compact form a URL shortener
-/// gives a numeric id (`123456789` becomes `"8M0kX"`). Zero encodes to `"0"`.
-/// Round-trips with [`decode_uint`].
-pub fn encode_uint(value : UInt64) -> String {
-  if value == 0 {
-    return "0"
-  }
-  let little : Array[Char] = Array::new()
-  let mut v = value
-  while v > 0 {
-    little.push(alphabet.char_of((v % 62).to_int()))
-    v = v / 62
-  }
-  let chars : Array[Char] = Array::new()
-  let mut k = little.length() - 1
-  while k >= 0 {
-    chars.push(little[k])
-    k = k - 1
-  }
-  String::from_array(chars)
+/// Decode from ASCII bytes, for callers who never had a string.
+pub fn decode_bytes(input : BytesView) -> Bytes raise @moonbase.Malformed {
+  @moonbase.decode_bytes(input, alphabet)
 }
 
 ///|
-/// Decode a base62 string produced by [`encode_uint`] back to an unsigned
-/// integer. Returns `None` for an empty string or an out-of-alphabet
-/// character. Values beyond `UInt64::max_value` wrap, so keep ids within range.
-pub fn decode_uint(input : String) -> UInt64? {
-  if input.length() == 0 {
-    return None
-  }
-  let mut acc : UInt64 = 0
-  for c in input.iter() {
-    match alphabet.value_of(c) {
-      None => return None
-      Some(d) => acc = acc * 62 + d.to_uint64()
-    }
-  }
-  Some(acc)
+/// Decode, skipping anything outside the alphabet.
+pub fn decode_lossy(input : StringView) -> Bytes {
+  @moonbase.decode_lossy(input, alphabet)
+}
+
+///|
+/// Write a whole number in this base. Unlike the byte faces, this one has no
+/// leading-zero rule: a number has no leading zeros to preserve.
+pub fn encode_int(value : UInt64) -> String {
+  @moonbase.encode_int(value, alphabet)
+}
+
+///|
+/// Read a whole number in this base.
+pub fn decode_int(input : StringView) -> UInt64 raise @moonbase.Malformed {
+  @moonbase.decode_int(input, alphabet)
 }

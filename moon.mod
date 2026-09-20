@@ -1,6 +1,6 @@
 name = "moonbitstack/moonbase"
 
-version = "0.3.0"
+version = "0.4.0"
 
 readme = "README.md"
 
@@ -10,6 +10,6 @@ license = "Apache-2.0"
 
 keywords = [ "base16", "base32", "base36", "base58", "base62", "base64" ]
 
-description = "base16/base32/base36/base58/base62/base64 for MoonBit — RFC 4648 hex/base32/base64 plus a big-integer base-N core behind base36/base58/base62."
+description = "Encodings for MoonBit: base16, base32, base36, base58, base62 and base64, each with the same five faces — encode, encode_bytes, decode, decode_bytes and decode_lossy — and failures that name where they happened."
 
 preferred_target = "wasm-gc"

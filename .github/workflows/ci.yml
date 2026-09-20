@@ -37,7 +37,7 @@ jobs:
           moon update
 
       - name: moon check
-        run: moon check --target all
+        run: moon check --target all --deny-warn
 
       - name: moon build
         run: moon build --target all
@@ -48,3 +48,7 @@ jobs:
       - name: lint (fmt is clean)
         run: |
           moon fmt && git diff --exit-code
+
+      - name: interfaces are up to date
+        run: |
+          moon info --target all && git diff --exit-code

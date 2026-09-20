@@ -3,15 +3,11 @@
 
 ///|
 fn ascii(s : String) -> Bytes {
-  let out : Array[Byte] = Array::new()
-  for c in s {
-    out.push(c.to_int().to_byte())
-  }
-  Bytes::from_array(out)
+  @moonbase.ascii(s)
 }
 
 ///|
-/// RFC 4648 §10 base32 test vectors.
+/// The RFC 4648 §10 vectors for the ordinary alphabet.
 test "base32 RFC 4648 vectors round-trip" {
   let cases = [
     ("", ""),
@@ -22,16 +18,16 @@ test "base32 RFC 4648 vectors round-trip" {
     ("fooba", "MZXW6YTB"),
     ("foobar", "MZXW6YTBOI======"),
   ]
-  for c in cases {
-    let (text, b32) = c
+  for case in cases {
+    let (text, encoded) = case
     let raw = ascii(text)
-    assert_eq(@base32.encode(raw), b32)
-    assert_eq(@base32.decode(b32), Some(raw))
+    assert_eq(@base32.encode(raw[:]), encoded)
+    assert_eq(@base32.decode(encoded), raw)
   }
 }
 
 ///|
-/// RFC 4648 §10 base32hex test vectors.
+/// The RFC 4648 §10 vectors for the extended-hex alphabet.
 test "base32hex RFC 4648 vectors round-trip" {
   let cases = [
     ("", ""),
@@ -42,17 +38,71 @@ test "base32hex RFC 4648 vectors round-trip" {
     ("fooba", "CPNMUOJ1"),
     ("foobar", "CPNMUOJ1E8======"),
   ]
-  for c in cases {
-    let (text, b32) = c
+  for case in cases {
+    let (text, encoded) = case
     let raw = ascii(text)
-    assert_eq(@base32.encode_hex(raw), b32)
-    assert_eq(@base32.decode_hex(b32), Some(raw))
+    assert_eq(@base32.encode(raw[:], kind=Hex), encoded)
+    assert_eq(@base32.decode(encoded, kind=Hex), raw)
   }
 }
 
 ///|
-test "base32 tolerates missing padding and rejects bad input" {
-  assert_eq(@base32.decode("MZXW6YTBOI"), Some(ascii("foobar")))
-  assert_eq(@base32.decode("MZXW6YTB1"), None) // '1' is not a base32 digit
-  assert_eq(@base32.decode("MZX"), None) // 3 chars is an impossible length
+test "the extended-hex alphabet keeps byte order" {
+  let low = @base32.encode(b"\x00\x00"[:], kind=Hex, padding=false)
+  let high = @base32.encode(b"\xff\xff"[:], kind=Hex, padding=false)
+  assert_true(low < high)
+}
+
+///|
+test "encoding without padding leaves the tail off" {
+  assert_eq(@base32.encode(ascii("f")[:], padding=false), "MY")
+  assert_eq(@base32.encode(ascii("foobar")[:], padding=false), "MZXW6YTBOI")
+}
+
+///|
+test "padding is optional on the way in, and either case decodes" {
+  assert_eq(@base32.decode("MZXW6YTBOI"), ascii("foobar"))
+  assert_eq(@base32.decode("mzxw6ytboi"), ascii("foobar"))
+}
+
+///|
+test "a character outside the alphabet says which one and where" {
+  try @base32.decode("MZ1W6===") catch {
+    failure => assert_eq(failure, Bad(at=2, char='1'))
+  } noraise {
+    _ => fail("expected the one to be rejected")
+  }
+}
+
+///|
+test "a length that cannot be a whole number of bytes is truncated input" {
+  try @base32.decode("MZX") catch {
+    failure => assert_eq(failure, Truncated(at=3))
+  } noraise {
+    _ => fail("expected three characters to be rejected")
+  }
+}
+
+///|
+test "the lossy face skips what the strict one refuses" {
+  assert_eq(@base32.decode_lossy("MZXW\n6YTB\nOI"), ascii("foobar"))
+  assert_eq(@base32.decode_lossy("!!!!"), b"")
+}
+
+///|
+test "the bytes faces agree with the string faces" {
+  let raw = ascii("foobar")
+  assert_eq(@base32.encode_bytes(raw[:]), ascii("MZXW6YTBOI======"))
+  assert_eq(@base32.decode_bytes(ascii("MZXW6YTBOI")[:]), raw)
+}
+
+///|
+test "every byte value survives the round trip" {
+  let all : Array[Byte] = []
+  for i in 0..<256 {
+    all.push(i.to_byte())
+  }
+  let raw = Bytes::from_array(all)
+  assert_eq(@base32.decode(@base32.encode(raw[:])), raw)
+  assert_eq(@base32.decode(@base32.encode(raw[:], kind=Hex), kind=Hex), raw)
 }

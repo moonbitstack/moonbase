@@ -2,23 +2,36 @@
 package "moonbitstack/moonbase/base36"
 
 import {
+  "moonbitlang/core/debug",
   "moonbitstack/moonbase",
 }
 
 // Values
 pub let alphabet : @moonbase.Alphabet
 
-pub fn decode(String) -> Bytes?
+pub let alphabet_upper : @moonbase.Alphabet
 
-pub fn decode_uint(String) -> UInt64?
+pub fn decode(StringView, kind? : Kind) -> Bytes raise @moonbase.Malformed
 
-pub fn encode(Bytes) -> String
+pub fn decode_bytes(BytesView, kind? : Kind) -> Bytes raise @moonbase.Malformed
 
-pub fn encode_uint(UInt64) -> String
+pub fn decode_int(StringView, kind? : Kind) -> UInt64 raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView, kind? : Kind) -> Bytes
+
+pub fn encode(BytesView, kind? : Kind) -> String
+
+pub fn encode_bytes(BytesView, kind? : Kind) -> Bytes
+
+pub fn encode_int(UInt64, kind? : Kind) -> String
 
 // Errors
 
 // Types and methods
+pub(all) enum Kind {
+  Lower
+  Upper
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 
