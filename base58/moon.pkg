@@ -6,3 +6,7 @@
 import {
   "moonbitstack/moonbase",
 }
+
+import {
+  "moonbitstack/moonbase/base16",
+} for "test"

@@ -2,30 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
-/// Parse a hex string into bytes so the test cases can quote the canonical
-/// Bitcoin vectors verbatim.
-fn hex(s : String) -> Bytes {
-  let out : Array[Byte] = []
-  let mut i = 0
-  while i + 1 < s.length() {
-    out.push((digit(s[i].to_int()) * 16 + digit(s[i + 1].to_int())).to_byte())
-    i = i + 2
-  }
-  Bytes::from_array(out)
-}
-
-///|
-fn digit(code : Int) -> Int {
-  if code >= 48 && code <= 57 {
-    code - 48
-  } else if code >= 97 && code <= 102 {
-    code - 97 + 10
-  } else {
-    code - 65 + 10
-  }
-}
-
-///|
 /// The canonical vectors from Bitcoin Core's `base58_encode_decode.json`.
 test "base58 canonical vectors round-trip" {
   let cases = [
@@ -46,7 +22,7 @@ test "base58 canonical vectors round-trip" {
   ]
   for c in cases {
     let (h, want) = c
-    let raw = hex(h)
+    let raw = @base16.decode_lossy(h)
     assert_eq(@base58.encode(raw[:]), want)
     assert_eq(@base58.decode(want), raw)
   }
