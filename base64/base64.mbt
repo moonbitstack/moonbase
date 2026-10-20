@@ -22,8 +22,8 @@ pub extend Kind with Debug::{to_repr}
 /// defaults.
 pub fn encode(
   input : BytesView,
-  kind? : Kind = Std,
-  padding? : Bool = true,
+  kind~ : Kind = Std,
+  padding~ : Bool = true,
 ) -> String {
   @moonbase.pack(input, 6, digits(kind), padding)
 }
@@ -33,8 +33,8 @@ pub fn encode(
 /// HTTP header or a gRPC metadata value actually holds.
 pub fn encode_bytes(
   input : BytesView,
-  kind? : Kind = Std,
-  padding? : Bool = true,
+  kind~ : Kind = Std,
+  padding~ : Bool = true,
 ) -> Bytes {
   @moonbase.pack_bytes(input, 6, digits(kind), padding)
 }
@@ -44,7 +44,7 @@ pub fn encode_bytes(
 /// an impossible length fails, naming where.
 pub fn decode(
   input : StringView,
-  kind? : Kind = Std,
+  kind~ : Kind = Std,
 ) -> Bytes raise @moonbase.Malformed {
   @moonbase.unpack(input, 6, lookup(kind), false)
 }
@@ -53,7 +53,7 @@ pub fn decode(
 /// Decode from ASCII bytes, for callers who never had a string.
 pub fn decode_bytes(
   input : BytesView,
-  kind? : Kind = Std,
+  kind~ : Kind = Std,
 ) -> Bytes raise @moonbase.Malformed {
   @moonbase.unpack_bytes(input, 6, lookup(kind), false)
 }
@@ -61,7 +61,7 @@ pub fn decode_bytes(
 ///|
 /// Decode, skipping anything outside the alphabet — the newlines in a PEM body,
 /// the whitespace in a pasted token.
-pub fn decode_lossy(input : StringView, kind? : Kind = Std) -> Bytes {
+pub fn decode_lossy(input : StringView, kind~ : Kind = Std) -> Bytes {
   try @moonbase.unpack(input, 6, lookup(kind), true) catch {
     _ => b""
   } noraise {
@@ -85,7 +85,7 @@ fn digits(kind : Kind) -> Array[Char] {
 }
 
 ///|
-fn lookup(kind : Kind) -> Array[Int] {
+fn lookup(kind : Kind) -> Array[Int32] {
   match kind {
     Std => std_lookup
     Url => url_lookup
@@ -108,10 +108,10 @@ let std_digits : Array[Char] = std_text.to_array()
 let url_digits : Array[Char] = url_text.to_array()
 
 ///|
-let std_lookup : Array[Int] = @moonbase.lookup_of(std_text)
+let std_lookup : Array[Int32] = @moonbase.lookup_of(std_text)
 
 ///|
-let url_lookup : Array[Int] = @moonbase.lookup_of(url_text)
+let url_lookup : Array[Int32] = @moonbase.lookup_of(url_text)
 
 ///|
-let any_lookup : Array[Int] = @moonbase.lookup_of_both(std_text, url_text)
+let any_lookup : Array[Int32] = @moonbase.lookup_of_both(std_text, url_text)

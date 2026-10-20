@@ -21,8 +21,8 @@ pub extend Kind with Debug::{to_repr}
 /// Padded to a multiple of eight characters unless told otherwise.
 pub fn encode(
   input : BytesView,
-  kind? : Kind = Std,
-  padding? : Bool = true,
+  kind~ : Kind = Std,
+  padding~ : Bool = true,
 ) -> String {
   @moonbase.pack(input, 5, digits(kind), padding)
 }
@@ -31,8 +31,8 @@ pub fn encode(
 /// The same encoding, as the ASCII bytes it would be written with.
 pub fn encode_bytes(
   input : BytesView,
-  kind? : Kind = Std,
-  padding? : Bool = true,
+  kind~ : Kind = Std,
+  padding~ : Bool = true,
 ) -> Bytes {
   @moonbase.pack_bytes(input, 5, digits(kind), padding)
 }
@@ -42,7 +42,7 @@ pub fn encode_bytes(
 /// a length that cannot be a whole number of bytes fails, naming where.
 pub fn decode(
   input : StringView,
-  kind? : Kind = Std,
+  kind~ : Kind = Std,
 ) -> Bytes raise @moonbase.Malformed {
   @moonbase.unpack(input, 5, lookup(kind), false)
 }
@@ -51,7 +51,7 @@ pub fn decode(
 /// Decode from ASCII bytes, for callers who never had a string.
 pub fn decode_bytes(
   input : BytesView,
-  kind? : Kind = Std,
+  kind~ : Kind = Std,
 ) -> Bytes raise @moonbase.Malformed {
   @moonbase.unpack_bytes(input, 5, lookup(kind), false)
 }
@@ -59,7 +59,7 @@ pub fn decode_bytes(
 ///|
 /// Decode, skipping anything outside the alphabet — newlines, spaces, the
 /// punctuation a wrapped document picks up.
-pub fn decode_lossy(input : StringView, kind? : Kind = Std) -> Bytes {
+pub fn decode_lossy(input : StringView, kind~ : Kind = Std) -> Bytes {
   try @moonbase.unpack(input, 5, lookup(kind), true) catch {
     _ => b""
   } noraise {
@@ -76,7 +76,7 @@ fn digits(kind : Kind) -> Array[Char] {
 }
 
 ///|
-fn lookup(kind : Kind) -> Array[Int] {
+fn lookup(kind : Kind) -> Array[Int32] {
   match kind {
     Std => std_lookup
     Hex => hex_lookup
@@ -96,11 +96,11 @@ let std_digits : Array[Char] = std_text.to_array()
 let hex_digits : Array[Char] = hex_text.to_array()
 
 ///|
-let std_lookup : Array[Int] = @moonbase.lookup_of_both(
+let std_lookup : Array[Int32] = @moonbase.lookup_of_both(
   "abcdefghijklmnopqrstuvwxyz234567", std_text,
 )
 
 ///|
-let hex_lookup : Array[Int] = @moonbase.lookup_of_both(
+let hex_lookup : Array[Int32] = @moonbase.lookup_of_both(
   "0123456789abcdefghijklmnopqrstuv", hex_text,
 )

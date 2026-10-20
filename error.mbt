@@ -10,13 +10,13 @@
 /// much can still write `try? decode(s)`.
 pub(all) suberror Malformed {
   /// A character outside the alphabet, at this index.
-  Bad(at~ : Int, char~ : Char)
+  Bad(at~ : Int32, char~ : Char)
   /// The input ends in the middle of a group.
-  Truncated(at~ : Int)
+  Truncated(at~ : Int32)
   /// Padding where it cannot be, or too much of it.
-  Padding(at~ : Int)
+  Padding(at~ : Int32)
   /// A checksum that does not match what the payload says it should be.
-  Checksum(at~ : Int)
+  Checksum(at~ : Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -32,11 +32,11 @@ pub extend Malformed with Debug::{to_repr}
 /// data, a malformed alphabet is the caller's code.
 pub(all) suberror BadAlphabet {
   /// A character that is not ASCII, at this index in the alphabet.
-  NotAscii(at~ : Int, char~ : Char)
+  NotAscii(at~ : Int32, char~ : Char)
   /// A character that appears twice, which makes the mapping ambiguous.
-  Repeated(at~ : Int, char~ : Char)
+  Repeated(at~ : Int32, char~ : Char)
   /// Fewer than two digits, which is not a positional system.
-  TooFew(count~ : Int)
+  TooFew(count~ : Int32)
 } derive(Eq, Debug)
 
 ///|

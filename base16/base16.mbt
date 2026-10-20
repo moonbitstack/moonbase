@@ -21,20 +21,20 @@ pub extend Kind with Debug::{to_repr}
 ///
 /// Each byte becomes exactly two characters, so a leading `0x00` stays `"00"`
 /// — unlike a big-integer conversion, which drops leading zeros.
-pub fn encode(input : BytesView, kind? : Kind = Lower) -> String {
+pub fn encode(input : BytesView, kind~ : Kind = Lower) -> String {
   @moonbase.pack(input, 4, digits(kind), false)
 }
 
 ///|
 /// The same encoding, as the ASCII bytes it would be written with.
-pub fn encode_bytes(input : BytesView, kind? : Kind = Lower) -> Bytes {
+pub fn encode_bytes(input : BytesView, kind~ : Kind = Lower) -> Bytes {
   @moonbase.pack_bytes(input, 4, digits(kind), false)
 }
 
 ///|
 /// Encode with a colon between every byte, the spelling certificate
 /// fingerprints and MAC addresses are written in.
-pub fn encode_colons(input : BytesView, kind? : Kind = Lower) -> String {
+pub fn encode_colons(input : BytesView, kind~ : Kind = Lower) -> String {
   let table = digits(kind)
   let out = StringBuilder()
   for i in 0..<input.length() {
@@ -87,6 +87,6 @@ let lower : Array[Char] = "0123456789abcdef".to_array()
 let upper : Array[Char] = "0123456789ABCDEF".to_array()
 
 ///|
-let lookup : Array[Int] = @moonbase.lookup_of_both(
+let lookup : Array[Int32] = @moonbase.lookup_of_both(
   "0123456789abcdef", "0123456789ABCDEF",
 )

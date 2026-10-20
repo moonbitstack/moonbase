@@ -10,7 +10,7 @@
 /// those packages is a table and five one-line functions.
 pub fn pack(
   input : BytesView,
-  bits : Int,
+  bits : Int32,
   digits : Array[Char],
   pad : Bool,
 ) -> String {
@@ -51,7 +51,7 @@ pub fn pack(
 /// the data for nothing.
 pub fn pack_bytes(
   input : BytesView,
-  bits : Int,
+  bits : Int32,
   digits : Array[Char],
   pad : Bool,
 ) -> Bytes {
@@ -70,8 +70,8 @@ pub fn pack_bytes(
 /// PEM body full of newlines needs, or an error naming where it was.
 pub fn unpack(
   input : StringView,
-  bits : Int,
-  lookup : Array[Int],
+  bits : Int32,
+  lookup : Array[Int32],
   lossy : Bool,
 ) -> Bytes raise Malformed {
   let out : Array[Byte] = []
@@ -116,8 +116,8 @@ pub fn unpack(
 /// Unpack from ASCII bytes, for callers who never had a string.
 pub fn unpack_bytes(
   input : BytesView,
-  bits : Int,
-  lookup : Array[Int],
+  bits : Int32,
+  lookup : Array[Int32],
   lossy : Bool,
 ) -> Bytes raise Malformed {
   let out = StringBuilder()
@@ -129,7 +129,7 @@ pub fn unpack_bytes(
 
 ///|
 /// The 128-entry table that turns a character into its digit value.
-pub fn lookup_of(chars : String) -> Array[Int] {
+pub fn lookup_of(chars : String) -> Array[Int32] {
   let table = Array::make(128, -1)
   let digits = chars.to_array()
   for i in 0..<digits.length() {
@@ -143,7 +143,7 @@ pub fn lookup_of(chars : String) -> Array[Int] {
 
 ///|
 /// The same table, accepting either case, for the encodings whose decoders do.
-pub fn lookup_of_both(lower : String, upper : String) -> Array[Int] {
+pub fn lookup_of_both(lower : String, upper : String) -> Array[Int32] {
   let table = lookup_of(lower)
   let digits = upper.to_array()
   for i in 0..<digits.length() {
@@ -157,7 +157,7 @@ pub fn lookup_of_both(lower : String, upper : String) -> Array[Int] {
 
 ///|
 /// How many characters make a whole number of bytes.
-fn group_of(bits : Int) -> Int {
+fn group_of(bits : Int32) -> Int32 {
   let mut chars = 1
   while chars * bits % 8 != 0 {
     chars = chars + 1

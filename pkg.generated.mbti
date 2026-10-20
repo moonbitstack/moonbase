@@ -22,35 +22,35 @@ pub fn encode_bytes(BytesView, Alphabet) -> Bytes
 
 pub fn encode_int(UInt64, Alphabet) -> String
 
-pub fn lookup_of(String) -> Array[Int]
+pub fn lookup_of(String) -> Array[Int32]
 
-pub fn lookup_of_both(String, String) -> Array[Int]
+pub fn lookup_of_both(String, String) -> Array[Int32]
 
-pub fn pack(BytesView, Int, Array[Char], Bool) -> String
+pub fn pack(BytesView, Int32, Array[Char], Bool) -> String
 
-pub fn pack_bytes(BytesView, Int, Array[Char], Bool) -> Bytes
+pub fn pack_bytes(BytesView, Int32, Array[Char], Bool) -> Bytes
 
 pub fn text_of(BytesView) -> String
 
-pub fn unpack(StringView, Int, Array[Int], Bool) -> Bytes raise Malformed
+pub fn unpack(StringView, Int32, Array[Int32], Bool) -> Bytes raise Malformed
 
-pub fn unpack_bytes(BytesView, Int, Array[Int], Bool) -> Bytes raise Malformed
+pub fn unpack_bytes(BytesView, Int32, Array[Int32], Bool) -> Bytes raise Malformed
 
 // Errors
 pub(all) suberror BadAlphabet {
-  NotAscii(at~ : Int, char~ : Char)
-  Repeated(at~ : Int, char~ : Char)
-  TooFew(count~ : Int)
+  NotAscii(at~ : Int32, char~ : Char)
+  Repeated(at~ : Int32, char~ : Char)
+  TooFew(count~ : Int32)
 } derive(Eq, @debug.Debug)
 pub fn BadAlphabet::equal(Self, Self) -> Bool
 pub fn BadAlphabet::not_equal(Self, Self) -> Bool
 pub fn BadAlphabet::to_repr(Self) -> @debug.Repr
 
 pub(all) suberror Malformed {
-  Bad(at~ : Int, char~ : Char)
-  Truncated(at~ : Int)
-  Padding(at~ : Int)
-  Checksum(at~ : Int)
+  Bad(at~ : Int32, char~ : Char)
+  Truncated(at~ : Int32)
+  Padding(at~ : Int32)
+  Checksum(at~ : Int32)
 } derive(Eq, @debug.Debug)
 pub fn Malformed::equal(Self, Self) -> Bool
 pub fn Malformed::not_equal(Self, Self) -> Bool
@@ -59,14 +59,14 @@ pub fn Malformed::to_repr(Self) -> @debug.Repr
 // Types and methods
 pub struct Alphabet {
   digits : Array[Char]
-  lookup : Array[Int]
-  base : Int
+  lookup : Array[Int32]
+  base : Int32
 }
-pub fn Alphabet::base(Self) -> Int
-pub fn Alphabet::char_of(Self, Int) -> Char
+pub fn Alphabet::base(Self) -> Int32
+pub fn Alphabet::char_of(Self, Int32) -> Char
 pub fn Alphabet::new(String) -> Self raise BadAlphabet
 pub fn Alphabet::of(String) -> Self
-pub fn Alphabet::value_of(Self, Char) -> Int?
+pub fn Alphabet::value_of(Self, Char) -> Int32?
 
 // Type aliases
 

@@ -7,7 +7,7 @@ fn ascii(s : String) -> Bytes {
 }
 
 ///|
-fn bytes(values : Array[Int]) -> Bytes {
+fn bytes(values : Array[Int32]) -> Bytes {
   let out : Array[Byte] = []
   for v in values {
     out.push(v.to_byte())
