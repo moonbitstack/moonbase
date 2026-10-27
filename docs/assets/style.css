@@ -27,7 +27,6 @@
   --sb-thumb: #c2c2c2;
   --sb-thumb-hover: #a6a6a6;
   --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 18px -10px rgba(0,0,0,.12);
-  --maxw: 1180px;
 }
 
 :root[data-theme="dark"] {
@@ -154,11 +153,13 @@ code, pre, .mono, .sig {
 .skip-link:focus { left: 0; }
 
 /* ---- 3-column layout ---------------------------------------------------- */
+/* Full-bleed grid: the sidebar is anchored to the left edge of the viewport
+   at every width. The reading column keeps its own measure and centres in
+   whatever space is left, so wide screens get symmetric slack. */
 .rtd-wrap {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 230px;
-  max-width: var(--maxw);
-  margin: 0 auto;
+  grid-template-columns: 280px minmax(0, 1fr) 240px;
+  margin: 0;
   align-items: start;
 }
 
@@ -183,7 +184,7 @@ code, pre, .mono, .sig {
 .side-nav a {
   display: flex; align-items: center; gap: .35rem;
   color: var(--side-ink); font-size: .94rem; padding: .36rem .55rem;
-  border-radius: 6px; border-left: 3px solid transparent;
+  border-radius: 0 6px 6px 0; border-left: 3px solid transparent;
 }
 .side-nav a .at { color: var(--accent); opacity: .7; }
 .side-nav a:hover { background: var(--side-2); color: #fff; text-decoration: none; }
@@ -199,7 +200,10 @@ code, pre, .mono, .sig {
 .side-github:hover { color: #fff; text-decoration: none; }
 
 /* ---- content ------------------------------------------------------------ */
-.rtd-content { min-width: 0; padding: 1.6rem 2.2rem 4rem; }
+.rtd-content {
+  min-width: 0; padding: 1.6rem 2.2rem 4rem;
+  width: 100%; max-width: 1140px; margin-inline: auto;
+}
 main { min-width: 0; }
 .breadcrumb {
   font-size: .82rem; color: var(--muted); margin: 0 0 1.2rem;
@@ -235,11 +239,13 @@ pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
 .g { display: inline-block; text-align: center; }
 
 /* example + output blocks (guide / home) */
+/* The accent rule is a straight vertical bar, so the left corners stay square;
+   rounding them would bend the bar into a "( ". */
 .example {
   background: var(--code-bg);
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 0 8px 8px 0;
   padding: .9rem 1rem;
   overflow-x: auto;
   margin: 1rem 0;
@@ -329,7 +335,7 @@ tbody tr:nth-child(even) { background: var(--panel); }
 .rtd-toc {
   position: sticky; top: 52px; align-self: start;
   height: calc(100vh - 52px); overflow-y: auto;
-  padding: 1.6rem .8rem 2rem 0;
+  padding: 1.6rem 1rem 2rem 1.2rem;
   font-size: .86rem;
 }
 .toc-title {
@@ -405,7 +411,7 @@ tbody tr:nth-child(even) { background: var(--panel); }
 .pg-row .copy { font-size: .68rem; }
 
 /* stat + feature cards */
-.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.6rem 0; max-width: 560px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 1.6rem 0; }
 .stat {
   background: var(--panel); border: 1px solid var(--line);
   border-radius: 10px; padding: .9rem 1rem;
@@ -459,10 +465,14 @@ tbody tr:nth-child(even) { background: var(--panel); }
 .result {
   font-family: "Roboto Mono", monospace; font-size: 1.05rem; color: var(--out);
   background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--out);
-  border-radius: 8px; padding: .7rem .9rem; overflow-x: auto; white-space: nowrap;
+  border-radius: 0 8px 8px 0; padding: .7rem .9rem; overflow-x: auto; white-space: nowrap;
 }
 
 /* ---- responsive: single column, never horizontal scroll ---------------- */
+@media (width <= 1100px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (width <= 860px) {
   .rtd-wrap { grid-template-columns: minmax(0, 1fr); }
   .pg-row { grid-template-columns: 92px minmax(0, 1fr) auto; }
