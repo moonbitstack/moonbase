@@ -1,272 +1,317 @@
 #!/usr/bin/env python3
-"""Generate a self-contained, styled API-reference site (docs/index.html) for
-gh-pages from the package sources' `///` doc comments. Reproducible: reads the
-.mbt files, so the docs never drift from the code."""
-import re, html, pathlib
+"""Generate the API reference (docs/api.html) for GitHub Pages.
+
+The page is built from two sources, so it can never drift from the code:
+
+  * each package's ``pkg.generated.mbti``  — the authoritative public surface
+    (signatures, optional ``kind?`` arguments, ``raise`` clauses, types);
+  * the ``///`` doc-comments in the ``.mbt`` sources            — the prose.
+
+Reproducible by construction: package order and item order are fixed, so the
+output is byte-stable and ``git diff --exit-code docs/api.html`` stays empty
+when the workflow re-runs this script.
+
+Style: the classic Read the Docs layout (dark navigation sidebar, content with
+a right-hand "on this page" table of contents), sharing docs/assets/style.css
+and docs/assets/site.js with the rest of the site.
+"""
+from __future__ import annotations
+
+import html
+import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-PKGS = [
-    ("moonbase", "moonbase.mbt", "Generic positional base-N core. base36/base58/base62 pin an alphabet onto it."),
-    ("base16", "base16/base16.mbt", "RFC 4648 hexadecimal — byte-oriented (two chars per byte)."),
-    ("base32", "base32/base32.mbt", "RFC 4648 base32 (A-Z2-7) and base32hex (0-9A-V)."),
-    ("base36", "base36/base36.mbt", "Dense case-insensitive 0-9a-z over the base-N core, with an integer mode."),
-    ("base58", "base58/base58.mbt", "The Bitcoin / IPFS alphabet over the base-N core."),
-    ("base62", "base62/base62.mbt", "URL-safe 0-9A-Za-z over the base-N core, with an integer mode."),
-    ("base64", "base64/base64.mbt", "RFC 4648 standard (+/) and URL-safe (-_) base64."),
+
+# package name -> (mbti file, [source files that make up the package], blurb)
+PACKAGES = [
+    ("moonbase", "pkg.generated.mbti",
+     ["moonbase.mbt", "bits.mbt", "error.mbt"],
+     "Generic positional base-N core. base36, base58 and base62 pin an alphabet onto it."),
+    ("base16", "base16/pkg.generated.mbti",
+     ["base16/base16.mbt"],
+     "RFC 4648 hexadecimal — byte-oriented, two characters per byte, with a colon form for fingerprints."),
+    ("base32", "base32/pkg.generated.mbti",
+     ["base32/base32.mbt"],
+     "RFC 4648 base32 (A-Z2-7) and the extended-hex base32hex (0-9A-V), which sorts like the bytes."),
+    ("base36", "base36/pkg.generated.mbti",
+     ["base36/base36.mbt"],
+     "Case-insensitive 0-9a-z over the base-N core, with an integer mode."),
+    ("base58", "base58/pkg.generated.mbti",
+     ["base58/base58.mbt"],
+     "The base58 alphabet over the base-N core. It leaves out 0, O, I and l, so a string survives being read aloud."),
+    ("base62", "base62/pkg.generated.mbti",
+     ["base62/base62.mbt"],
+     "URL-safe 0-9A-Za-z over the base-N core, with an integer mode."),
+    ("base64", "base64/pkg.generated.mbti",
+     ["base64/base64.mbt"],
+     "RFC 4648 standard (+/) and URL-safe (-_) base64."),
 ]
 
+# Derived trait methods are noise in a reference; they carry no doc-comment
+# and are never something a caller reaches for. Left out on purpose.
+DERIVED_SUFFIXES = ("::equal", "::not_equal", "::to_repr")
 
-def parse(path):
-    items, doc = [], []
-    for raw in path.read_text(encoding="utf-8").splitlines():
+KNOWN_TYPES = {
+    "Bytes", "BytesView", "String", "StringView", "Int", "Int32", "UInt", "UInt64",
+    "Char", "Bool", "Unit", "Array", "Map", "Option", "Result", "Alphabet",
+    "Kind", "Malformed", "BadAlphabet", "Repr", "Debug", "Eq",
+}
+
+
+# --------------------------------------------------------------------------
+# parsing
+# --------------------------------------------------------------------------
+def parse_source_doc(path: pathlib.Path) -> dict[str, str]:
+    """Return {item-name: prose} for every public item documented by `///`."""
+    docs: dict[str, str] = {}
+    buffer: list[str] = []
+    text = path.read_text(encoding="utf-8")
+    for raw in text.splitlines():
         s = raw.strip()
         if s == "///|":
-            doc = []
+            buffer = []
         elif s.startswith("///"):
-            doc.append(s[3:].strip())
+            buffer.append(s[3:].strip())
         elif s.startswith("pub "):
-            sig = re.sub(r"\s*\{.*$", "", s[4:]).rstrip()
-            kind = ("struct" if sig.startswith("struct") else "fn" if sig.startswith("fn")
-                    else "let" if sig.startswith("let") else "item")
-            items.append((kind, sig, " ".join(doc).strip()))
-            doc = []
-        elif s == "":
-            pass
+            name = pub_name(s)
+            if name is not None and name not in DERIVED_SUFFIXES:
+                docs[name] = " ".join(b for b in buffer if b).strip()
+            buffer = []
         else:
-            doc = []
+            # any non-doc, non-public line ends a pending comment block
+            buffer = []
+    return docs
+
+
+def pub_name(line: str) -> str | None:
+    """The stable key for a public declaration line, or None to skip it."""
+    s = line.strip()
+    if s.startswith("pub extend") or s.startswith("pub(all) extend"):
+        return None
+    m = re.match(r"pub(?:\(all\))?\s+(?:fn|let|struct|enum|suberror)\s+([A-Za-z0-9_]+::[A-Za-z0-9_]+)", s)
+    if m:
+        return m.group(1)
+    m = re.match(r"pub(?:\(all\))?\s+(?:fn|let|struct|enum|suberror)\s+([A-Za-z0-9_]+)", s)
+    if m:
+        return m.group(1)
+    return None
+
+
+def parse_mbti(path: pathlib.Path) -> list[dict]:
+    """Return the public items of a package, in source order."""
+    items: list[dict] = []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    i = 0
+    n = len(lines)
+    while i < n:
+        raw = lines[i]
+        s = raw.strip()
+        if not (s.startswith("pub ") or s.startswith("pub(all) ")):
+            i += 1
+            continue
+        # collect a possibly multi-line definition (enum/struct/suberror span `}`)
+        buf = [s]
+        depth = s.count("{") - s.count("}")
+        j = i + 1
+        while depth > 0 and j < n:
+            buf.append(lines[j].strip())
+            depth += lines[j].count("{") - lines[j].count("}")
+            j += 1
+        full = " ".join(buf)
+        name = pub_name(s)
+        if name is None or name.endswith(DERIVED_SUFFIXES):
+            i = j
+            continue
+        kind = "struct" if "struct" in s else \
+            "enum" if "enum" in s else \
+            "error" if "suberror" in s else \
+            "let" if s.split()[1] == "let" else "fn"
+        items.append({
+            "name": name,
+            "kind": kind,
+            "sig": full,
+            "variants": extract_variants(buf) if kind in ("enum", "error") else None,
+        })
+        i = j
     return items
 
 
-TYPES = {"Bytes", "String", "Int", "Char", "Bool", "Array", "Map", "UInt64", "Alphabet", "Unit"}
+def extract_variants(buf: list[str]) -> list[str]:
+    """The constructor lines inside an enum/suberror body."""
+    variants: list[str] = []
+    inside = False
+    for line in buf:
+        if not inside:
+            if "{" not in line:
+                continue
+            inside = True
+            line = line.split("{", 1)[1].strip()
+        if "}" in line:
+            line = line.split("}", 1)[0].strip()
+            if line:
+                variants.append(line)
+            break
+        line = line.strip()
+        if line and not line.startswith("derive"):
+            variants.append(line)
+    return variants
 
 
-def tint(sig):
-    s = html.escape(sig)
-    s = re.sub(r"\b(fn|struct|let)\b", r'<span class="k">\1</span>', s)
-    s = re.sub(r"\b([A-Z][A-Za-z0-9_]*)\b", r'<span class="ty">\1</span>', s)
-    s = s.replace("-&gt;", '<span class="op">-&gt;</span>').replace("?", '<span class="op">?</span>')
-    return s
-
-
-def prose(t):
-    t = html.escape(t)
-    return re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
-
-
-CSS = r"""
-:root{
-  --bg:#fbfbfd; --panel:#ffffff; --panel-2:#f6f7fb; --ink:#14181f;
-  --muted:#5b6675; --line:#e8ebf1; --accent:#6d5efc; --accent-soft:#efecff; --out:#0ca678;
-  --code-bg:#f4f5f9; --shadow:0 1px 2px rgba(20,24,31,.04),0 8px 24px -12px rgba(20,24,31,.10);
-}
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0b0e14; --panel:#131722; --panel-2:#0f131c; --ink:#e9edf6; --muted:#96a1b5;
-  --line:#212736; --accent:#9d8bff; --accent-soft:#1c1b3a; --out:#2dd4a7;
-  --code-bg:#161b26; --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -14px rgba(0,0,0,.5);
-}}
-:root[data-theme=light]{--bg:#fbfbfd;--panel:#fff;--panel-2:#f6f7fb;--ink:#14181f;--muted:#5b6675;--line:#e8ebf1;--accent:#6d5efc;--accent-soft:#efecff;--out:#0ca678;--code-bg:#f4f5f9;--shadow:0 1px 2px rgba(20,24,31,.04),0 8px 24px -12px rgba(20,24,31,.10)}
-:root[data-theme=dark]{--bg:#0b0e14;--panel:#131722;--panel-2:#0f131c;--ink:#e9edf6;--muted:#96a1b5;--line:#212736;--accent:#9d8bff;--accent-soft:#1c1b3a;--out:#2dd4a7;--code-bg:#161b26;--shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -14px rgba(0,0,0,.5)}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
-body{margin:0;background:var(--bg);color:var(--ink);
-  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-  font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
-code,pre,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-a{color:var(--accent);text-decoration:none}
-a:hover{text-decoration:underline}
-.layout{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1180px;margin:0 auto}
-
-/* sidebar */
-.sidebar{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
-  border-right:1px solid var(--line);padding:1.6rem 1.1rem 2rem;background:var(--panel-2)}
-.brand{display:flex;align-items:center;gap:.55rem;font-family:"IBM Plex Mono";font-weight:600;
-  font-size:1.35rem;letter-spacing:-.01em;color:var(--ink);margin-bottom:.15rem}
-.brand .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
-.brand-sub{color:var(--muted);font-size:.8rem;margin:0 0 1.3rem;padding-left:.15rem}
-.side-nav{display:flex;flex-direction:column;gap:.1rem}
-.side-nav a{color:var(--muted);font-size:.9rem;padding:.32rem .6rem;border-radius:8px;
-  font-family:"IBM Plex Mono";display:flex;align-items:center;gap:.4rem;border-left:2px solid transparent}
-.side-nav a .at{color:var(--accent);opacity:.6}
-.side-nav a:hover{background:var(--accent-soft);color:var(--ink);text-decoration:none}
-.side-nav a.active{color:var(--ink);background:var(--accent-soft);border-left-color:var(--accent);font-weight:500}
-.side-nav a.active .at{opacity:1}
-.side-foot{margin-top:1.6rem;padding-top:1.1rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.4rem}
-.side-foot img{height:20px;display:block}
-.theme-btn{margin-top:1rem;background:none;border:1px solid var(--line);color:var(--muted);
-  border-radius:8px;padding:.35rem .6rem;font:inherit;font-size:.82rem;cursor:pointer;width:100%}
-.theme-btn:hover{border-color:var(--accent);color:var(--ink)}
-
-/* main */
-main{padding:2.6rem 2.4rem 5rem;min-width:0}
-.hero h1{font-family:"IBM Plex Mono";font-weight:600;font-size:2.9rem;letter-spacing:-.02em;margin:0}
-.hero .tag{color:var(--muted);font-size:1.12rem;max-width:60ch;margin:.5rem 0 1.1rem;text-wrap:balance}
-.badges{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.4rem}
-.badges img{height:21px;display:block}
-.install{display:flex;align-items:center;gap:.6rem;background:var(--panel);border:1px solid var(--line);
-  border-radius:12px;padding:.65rem 1rem;box-shadow:var(--shadow);max-width:420px}
-.install .prompt{color:var(--out);user-select:none;font-weight:600}
-.install code{flex:1;font-size:.95rem}
-.copy{background:none;border:1px solid var(--line);border-radius:7px;color:var(--muted);
-  cursor:pointer;font:inherit;font-size:.72rem;padding:.2rem .5rem}
-.copy:hover{border-color:var(--accent);color:var(--accent)}
-.copy.ok{color:var(--out);border-color:var(--out)}
-
-/* playground */
-.pg{margin:2.2rem 0 .5rem;background:
-   radial-gradient(120% 130% at 100% 0%, var(--accent-soft) 0%, transparent 55%), var(--panel);
-  border:1px solid var(--line);border-radius:16px;padding:1.3rem 1.4rem;box-shadow:var(--shadow)}
-.pg h2{margin:0 0 .1rem;font-size:1.06rem;display:flex;align-items:center;gap:.5rem}
-.pg h2 .spark{color:var(--accent)}
-.pg .hint{color:var(--muted);font-size:.86rem;margin:0 0 .9rem}
-.pg input{width:100%;font-family:"IBM Plex Mono";font-size:1rem;color:var(--ink);
-  background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:.7rem .9rem;outline:none}
-.pg input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.pg-rows{margin-top:.9rem;display:grid;gap:.35rem}
-.pg-row{display:grid;grid-template-columns:84px 1fr auto;align-items:center;gap:.7rem;
-  padding:.4rem .6rem;border-radius:9px}
-.pg-row:hover{background:var(--panel-2)}
-.pg-row .lbl{font-family:"IBM Plex Mono";font-size:.8rem;color:var(--accent);font-weight:500}
-.pg-row .val{font-family:"IBM Plex Mono";font-size:.9rem;color:var(--out);overflow-x:auto;white-space:nowrap;
-  scrollbar-width:thin}
-.pg-row .val::-webkit-scrollbar{height:5px}
-
-/* sections + cards */
-section.pkg{scroll-margin-top:1.2rem;padding-top:2.4rem;margin-top:2rem;border-top:1px solid var(--line)}
-section.pkg > h2{font-family:"IBM Plex Mono";font-size:1.55rem;margin:0 0 .15rem;letter-spacing:-.01em}
-section.pkg > h2 .at{color:var(--accent)}
-.pdesc{color:var(--muted);margin:.15rem 0 1.2rem;max-width:70ch}
-.item{background:var(--panel);border:1px solid var(--line);border-radius:13px;
-  padding:1rem 1.2rem;margin:.85rem 0;box-shadow:var(--shadow);transition:border-color .15s,transform .15s}
-.item:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--line))}
-.kind{display:inline-block;font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
-  border-radius:6px;padding:.1rem .45rem;margin-bottom:.55rem;
-  color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in oklab,var(--accent) 26%,transparent)}
-.item[data-k=struct] .kind{--c:#8b5cf6}.item[data-k=fn] .kind{--c:#0ca678}.item[data-k=let] .kind{--c:#2563eb}
-.item .kind{color:var(--c,var(--accent));background:color-mix(in oklab,var(--c,var(--accent)) 13%,transparent);
-  border-color:color-mix(in oklab,var(--c,var(--accent)) 30%,transparent)}
-.sig{font-size:.98rem;margin:0 0 .55rem;overflow-x:auto;white-space:pre;color:var(--ink);padding-bottom:.15rem}
-.sig .k{color:#8b5cf6;font-weight:500}.sig .ty{color:var(--accent)}.sig .op{color:var(--muted)}
-@media (prefers-color-scheme:dark){.sig .k{color:#b794ff}}
-.doc{margin:0;color:var(--ink);max-width:74ch}
-.doc code{background:var(--code-bg);padding:.06rem .35rem;border-radius:5px;font-size:.9em;color:var(--accent)}
-footer{margin-top:3rem;padding-top:1.3rem;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
-
-@media (max-width:820px){
-  .layout{grid-template-columns:1fr}
-  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}
-  .side-nav{flex-flow:row wrap}.side-nav a{border-left:none}.side-nav a.active{border-left:none}
-  main{padding:1.8rem 1.2rem 4rem}.hero h1{font-size:2.2rem}
-  .pg-row{grid-template-columns:70px 1fr auto}
-}
-"""
-
-# JS: codecs (mirror the library exactly) + playground + scroll-spy + copy + theme
-JS = r"""
-const ALPHA={base58:"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
-  base62:"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-  base36:"0123456789abcdefghijklmnopqrstuvwxyz"};
-const B32="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-function bytesOf(s){return new TextEncoder().encode(s);}
-function baseN(bytes,alpha){ // big-integer core; leading zero bytes -> zero digit
-  const base=BigInt(alpha.length); let n=0n; for(const b of bytes)n=(n<<8n)|BigInt(b);
-  let out=""; while(n>0n){out=alpha[Number(n%base)]+out;n=n/base;}
-  let z=0; for(const b of bytes){if(b===0)z++;else break;}
-  return alpha[0].repeat(z)+out;
-}
-function b16(bytes){return[...bytes].map(b=>b.toString(16).padStart(2,"0")).join("");}
-function b64(bytes){let s="";for(const b of bytes)s+=String.fromCharCode(b);return btoa(s);}
-function b32e(bytes){let out="",buf=0,bits=0;for(const b of bytes){buf=(buf<<8)|b;bits+=8;
-  while(bits>=5){bits-=5;out+=B32[(buf>>bits)&31];}buf&=(1<<bits)-1;}
-  if(bits>0)out+=B32[(buf<<(5-bits))&31];while(out.length%8)out+="=";return out;}
-const CODECS=[["base16",b16],["base32",b32e],["base36",s=>baseN(s,ALPHA.base36)],
-  ["base58",s=>baseN(s,ALPHA.base58)],["base62",s=>baseN(s,ALPHA.base62)],["base64",b64]];
-function render(){const by=bytesOf(document.getElementById("pg-in").value);
-  CODECS.forEach(([name,fn])=>{const el=document.getElementById("pg-"+name);if(el)el.textContent=fn(by);});}
-document.addEventListener("DOMContentLoaded",()=>{
-  const inp=document.getElementById("pg-in"); if(inp){inp.addEventListener("input",render);render();}
-  // copy buttons
-  document.querySelectorAll("[data-copy]").forEach(btn=>btn.addEventListener("click",()=>{
-    navigator.clipboard.writeText(btn.getAttribute("data-copy")).then(()=>{
-      const t=btn.textContent;btn.textContent="copied";btn.classList.add("ok");
-      setTimeout(()=>{btn.textContent=t;btn.classList.remove("ok");},1100);});}));
-  // scroll-spy
-  const links=[...document.querySelectorAll(".side-nav a")];
-  const map=Object.fromEntries(links.map(a=>[a.getAttribute("href").slice(1),a]));
-  const spy=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){
-    links.forEach(a=>a.classList.remove("active"));const a=map[e.target.id];if(a)a.classList.add("active");}});},
-    {rootMargin:"-10% 0px -80% 0px"});
-  document.querySelectorAll("section.pkg").forEach(s=>spy.observe(s));
-  // theme toggle
-  const tb=document.getElementById("theme");if(tb)tb.addEventListener("click",()=>{
-    const cur=document.documentElement.getAttribute("data-theme")
-      ||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
-    document.documentElement.setAttribute("data-theme",cur==="dark"?"light":"dark");});
-});
-"""
-
-
-def esc(t):
+# --------------------------------------------------------------------------
+# rendering helpers
+# --------------------------------------------------------------------------
+def esc(t: str) -> str:
     return html.escape(t)
 
 
-def main():
-    HEAD = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
-            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            '<title>moonbase — MoonBit API</title>'
-            '<link rel="preconnect" href="https://fonts.googleapis.com">'
-            '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-            '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&'
-            'family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">'
-            '<style>' + CSS + '</style></head><body>')
+def highlight(sig: str) -> str:
+    """Syntax-highlight a signature line for the <pre class=sig> blocks."""
+    s = esc(sig)
+    s = re.sub(r"\b(pub|pub\(all\)|fn|struct|let|enum|suberror)\b", r'<span class="k">\1</span>', s)
+    # type names: Capitalised identifiers and known lowercase types
+    def ty(m: re.Match) -> str:
+        word = m.group(0)
+        if word in KNOWN_TYPES or word[0].isupper():
+            return '<span class="ty">%s</span>' % word
+        return word
+    s = re.sub(r"\b[A-Za-z_][A-Za-z0-9_]*\b", ty, s)
+    s = s.replace("-&gt;", '<span class="op">-&gt;</span>')
+    s = s.replace("?", '<span class="op">?</span>')
+    s = s.replace("~", '<span class="op">~</span>')
+    return s
 
-    side = ['<aside class="sidebar"><div class="brand"><span class="dot"></span>moonbase</div>'
-            '<p class="brand-sub">MoonBit API reference</p><nav class="side-nav">']
-    side += ['<a href="#%s"><span class="at">@</span>%s</a>' % (n, n) for n, _, _ in PKGS]
-    side += ['</nav>'
-             '<button class="theme-btn" id="theme">◐ toggle theme</button>'
-             '<div class="side-foot">'
-             '<a href="https://github.com/moonbitstack/moonbase/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/moonbitstack/moonbase/ci.yml?branch=master&label=CI&logo=github"></a>'
-             '<a href="https://mooncakes.io/docs/moonbitstack/moonbase"><img alt="mooncakes" src="https://img.shields.io/badge/mooncakes-Lfan--ke%2Fmoonbase-1f6feb"></a>'
-             '</div></aside>']
 
-    pg_rows = "".join('<div class="pg-row"><span class="lbl">%s</span>'
-                      '<span class="val" id="pg-%s"></span></div>' % (n, n)
-                      for n in ["base16", "base32", "base36", "base58", "base62", "base64"])
-    hero = ('<main><header class="hero"><h1>moonbase</h1>'
-            '<p class="tag">base16 · base32 · base36 · base58 · base62 · base64 for MoonBit — the RFC 4648 '
-            'byte codecs plus a generic base-N core behind base36/base58/base62.</p>'
-            '<div class="badges">'
-            '<a href="https://github.com/moonbitstack/moonbase/actions"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/moonbitstack/moonbase/ci.yml?branch=master&label=CI&logo=github"></a>'
-            '<img alt="tests" src="https://img.shields.io/badge/tests-20%20passing-0ca678">'
-            '<a href="https://github.com/moonbitstack/moonbase"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-source-24292f?logo=github"></a>'
-            '<img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-6d5efc"></div>'
-            '<div class="install"><span class="prompt">$</span><code>moon add moonbitstack/moonbase</code>'
-            '<button class="copy" data-copy="moon add moonbitstack/moonbase">copy</button></div>'
-            '<div class="pg"><h2><span class="spark">✦</span> Try it live</h2>'
-            '<p class="hint">Type anything — encoded in the browser with the exact algorithms this library ships.</p>'
-            '<input id="pg-in" value="Hello, MoonBit!" spellcheck="false" aria-label="text to encode">'
-            '<div class="pg-rows">' + pg_rows + '</div></div></header>')
+def prose(t: str) -> str:
+    t = esc(t)
+    return re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
 
-    body = [HEAD, '<div class="layout">'] + side + [hero]
-    for name, rel, desc in PKGS:
-        body.append('<section class="pkg" id="%s"><h2><span class="at">@</span>%s</h2>'
-                    '<p class="pdesc">%s</p>' % (name, name, esc(desc)))
-        for kind, sig, doc in parse(ROOT / rel):
-            body.append('<div class="item" data-k="%s"><span class="kind">%s</span>'
-                        '<pre class="sig">%s</pre>%s</div>'
-                        % (kind, kind, tint(sig), ('<p class="doc">%s</p>' % prose(doc)) if doc else ''))
-        body.append('</section>')
-    body.append('<footer>Generated from source <code>///</code> doc-comments · '
-                '<a href="https://mooncakes.io/docs/moonbitstack/moonbase">mooncakes</a> · '
-                '<a href="https://github.com/moonbitstack/moonbase">GitHub</a> · Apache-2.0 © Leo Cheng</footer>')
-    body.append('</main></div><script>' + JS + '</script></body></html>')
 
-    out = ROOT / "docs" / "index.html"
+def item_html(it: dict, doc: str) -> str:
+    kind_label = {"fn": "function", "let": "value", "struct": "struct",
+                  "enum": "enum", "error": "error"}[it["kind"]]
+    if it["kind"] in ("struct", "enum", "error"):
+        # fields/constructors are shown separately; keep the head only
+        sig = re.sub(r"\s*\{.*$", "", strip_pub(it["sig"])).strip()
+    else:
+        sig = strip_pub(it["sig"])
+    if it["kind"] in ("enum", "error"):
+        variants = "".join(
+            '<div class="variant"><code>%s</code></div>' % highlight(v)
+            for v in it["variants"]
+        )
+        body = '<div class="variants">%s</div>' % variants
+    else:
+        body = ""
+    doc_html = '<p class="doc">%s</p>' % prose(doc) if doc else ""
+    return (
+        '<article class="item" id="sym-%s" data-kind="%s">'
+        '<span class="kind">%s</span>'
+        '<pre class="sig">%s</pre>%s%s'
+        '</article>'
+    ) % (esc(it["name"]), esc(it["kind"]), esc(kind_label),
+         highlight(sig),
+         body, doc_html)
+
+
+def strip_pub(sig: str) -> str:
+    return re.sub(r"^pub(?:\(all\))?\s+", "", sig).strip()
+
+
+# --------------------------------------------------------------------------
+# page shell (matches docs/assets/style.css)
+# --------------------------------------------------------------------------
+SIDE_NAV = "".join(
+    '<li><a href="api.html#pkg-%s" class="nav-pkg"><span class="at">@</span>%s</a></li>'
+    % (name, name) for name, *_ in PACKAGES
+)
+
+TOC = "".join(
+    '<li><a href="#pkg-%s">%s</a></li>' % (name, name)
+    for name, *_ in PACKAGES
+)
+
+
+def shell(title: str, main_html: str) -> str:
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Slab:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="rtd-top">
+  <a class="brand" href="index.html">moonbase</a>
+  <nav class="top-nav">
+    <a href="index.html">Home</a>
+    <a href="guide.html">Guide</a>
+    <a class="active" href="api.html">API</a>
+    <a href="showcase.html">Showcase</a>
+    <button class="theme-btn" id="theme-toggle" aria-label="Toggle colour theme" title="Toggle colour theme">&#9680;</button>
+    <a class="github" href="https://github.com/moonbitstack/moonbase" aria-label="GitHub repository" title="GitHub repository">
+      <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path></svg>
+    </a>
+  </nav>
+</header>
+<div class="rtd-wrap">
+  <aside class="rtd-side">
+    <p class="side-title">API Reference</p>
+    <ul class="side-nav">{SIDE_NAV}</ul>
+    <a class="side-github" href="https://github.com/moonbitstack/moonbase">View source on GitHub</a>
+  </aside>
+  <div class="rtd-content" id="content">
+    <nav class="breadcrumb"><a href="index.html">moonbase</a> &raquo; API Reference</nav>
+    <main>
+      <h1>API Reference</h1>
+      <p class="lede">Every public type, function, method and value in moonbase, grouped by
+      package. Signatures come from <code>pkg.generated.mbti</code>; the notes come from the
+      <code>///</code> doc-comments in the sources.</p>
+      {main_html}
+      <footer class="rtd-foot">
+        moonbase &middot; Apache-2.0 &middot;
+        <a href="https://github.com/moonbitstack/moonbase">GitHub</a> &middot;
+        <a href="https://mooncakes.io/docs/moonbitstack/moonbase">mooncakes</a>
+      </footer>
+    </main>
+  </div>
+  <aside class="rtd-toc">
+    <p class="toc-title">On this page</p>
+    <ul class="toc-nav">{TOC}</ul>
+  </aside>
+</div>
+<script src="assets/site.js"></script>
+</body>
+</html>"""
+
+
+def main() -> None:
+    parts: list[str] = []
+    for name, mbti_rel, srcs, blurb in PACKAGES:
+        mbti_path = ROOT / mbti_rel
+        doc_map: dict[str, str] = {}
+        for rel in srcs:
+            doc_map.update(parse_source_doc(ROOT / rel))
+        items = parse_mbti(mbti_path)
+        items = sorted(items, key=lambda it: it["name"])
+        cards = "".join(item_html(it, doc_map.get(it["name"], "")) for it in items)
+        parts.append(
+            '<section class="pkg" id="pkg-%s">'
+            '<h2><span class="at">@</span>%s</h2>'
+            '<p class="pdesc">%s</p>%s'
+            '</section>' % (name, name, esc(blurb), cards)
+        )
+    page = shell("API Reference — moonbase", "\n".join(parts))
+    out = ROOT / "docs" / "api.html"
     out.parent.mkdir(exist_ok=True)
-    out.write_text("\n".join(body), encoding="utf-8")
-    total = sum(len(parse(ROOT / rel)) for _, rel, _ in PKGS)
-    print("wrote %s (%d public items across %d packages)" % (out, total, len(PKGS)))
+    out.write_text(page, encoding="utf-8")
+    total = sum(len(parse_mbti(ROOT / m)) for _, m, _, _ in PACKAGES)
+    print("wrote %s (%d public items across %d packages)" % (out, total, len(PACKAGES)))
 
 
 if __name__ == "__main__":

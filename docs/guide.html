@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide — moonbase</title>
+<meta name="description" content="A progressive guide to moonbase: install, first encode, the five faces, variants, numbers, custom alphabets and honest errors.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Slab:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="rtd-top">
+  <a class="brand" href="index.html">moonbase</a>
+  <nav class="top-nav">
+    <a href="index.html">Home</a>
+    <a href="guide.html" class="active">Guide</a>
+    <a href="api.html">API</a>
+    <a href="showcase.html">Showcase</a>
+    <button class="theme-btn" id="theme-toggle" aria-label="Toggle colour theme" title="Toggle colour theme">&#9680;</button>
+    <a class="github" href="https://github.com/moonbitstack/moonbase" aria-label="GitHub repository" title="GitHub repository">
+      <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path></svg>
+    </a>
+  </nav>
+</header>
+<div class="rtd-wrap">
+  <aside class="rtd-side">
+    <p class="side-title">moonbase</p>
+    <ul class="side-nav">
+      <li><a href="#install">Install</a></li>
+      <li><a href="#first">Your first encode</a></li>
+      <li><a href="#faces">The five faces</a></li>
+      <li><a href="#variants">Variants</a></li>
+      <li><a href="#numbers">Whole numbers</a></li>
+      <li><a href="#custom">Custom alphabets</a></li>
+      <li><a href="#errors">Errors</a></li>
+      <li><a href="#lossy">Lossy decode</a></li>
+    </ul>
+    <a class="side-github" href="https://github.com/moonbitstack/moonbase">View source on GitHub</a>
+  </aside>
+  <div class="rtd-content" id="content">
+    <nav class="breadcrumb"><a href="index.html">moonbase</a> &raquo; Guide</nav>
+    <main>
+      <h1>Guide</h1>
+      <p class="lede">From install to a custom base-N system. Every snippet compiles on its own
+      and its output is the real thing.</p>
+
+      <section id="install">
+        <h2>Install</h2>
+        <p>Add the package, then import only the encodings you need. An application that uses
+        base64 does not link base58's big-integer core.</p>
+        <div class="example"><pre><code><span class="cmt">// moon.mod</span>
+{ "deps": { "moonbitstack/moonbase": "0.4.0" } }
+{ "import": ["moonbitstack/moonbase/base64"] }</code></pre></div>
+      </section>
+
+      <section id="first">
+        <h2>Your first encode</h2>
+        <p><code>encode</code> takes a <code>BytesView</code> and returns a <code>String</code>.</p>
+        <div class="example"><pre><code>let data = b"moonbase"
+@base64.encode(data[:])                           <span class="cmt">// "bW9vbmJhc2U="</span>
+@base64.encode(data[:], kind=Url, padding=false)  <span class="cmt">// "bW9vbmJhc2U"</span></code></pre></div>
+        <div class="output">bW9vbmJhc2U=
+bW9vbmJhc2U</div>
+        <p>To go back, <code>decode</code> returns the bytes and raises <code>Malformed</code> on bad
+        input.</p>
+        <div class="example"><pre><code>@base64.decode("bW9vbmJhc2U=")   <span class="cmt">// b"moonbase"</span></code></pre></div>
+        <div class="output">b"moonbase"</div>
+      </section>
+
+      <section id="faces">
+        <h2>The five faces</h2>
+        <p>All six packages share the same five functions. They differ only in their alphabet and
+        bit width.</p>
+        <h3>encode / encode_bytes</h3>
+        <p>Wire formats — an HTTP header, a gRPC metadata value — hold bytes. <code>encode_bytes</code>
+        hands you the ASCII bytes directly, with no <code>String</code> on the way.</p>
+        <div class="example"><pre><code>@base64.encode_bytes(data[:])   <span class="cmt">// ASCII bytes, same text</span></code></pre></div>
+        <h3>decode / decode_bytes</h3>
+        <p>The string and bytes forms are identical except for the input type, for callers who
+        never had a string.</p>
+        <div class="example"><pre><code>@base64.decode_bytes(@base64.encode_bytes(data[:]))</code></pre></div>
+        <h3>decode_lossy</h3>
+        <p>Skips anything outside the alphabet. Never fails — what a PEM body full of newlines
+        needs. See <a href="#lossy">Lossy decode</a>.</p>
+      </section>
+
+      <section id="variants">
+        <h2>Variants</h2>
+        <p>Variants are a named argument, not a new function. base16 switches case, base32 and
+        base64 switch alphabet, and base64 can drop padding.</p>
+        <div class="example"><pre><code>let data = b"moonbase"
+@base16.encode(data[:])                 <span class="cmt">// "6d6f6f6e62617365"</span>
+@base16.encode(data[:], kind=Upper)     <span class="cmt">// "6D6F6F4E62617365"</span>
+@base32.encode(data[:], kind=Hex)       <span class="cmt">// "DLNMURJ2C5PMA==="</span>
+@base64.encode(data[:], padding=false)  <span class="cmt">// "bW9vbmJhc2U="</span></code></pre></div>
+        <div class="output">6d6f6f6e62617365
+6D6F6F4E62617365
+DLNMURJ2C5PMA===
+bW9vbmJhc2U=</div>
+      </section>
+
+      <section id="numbers">
+        <h2>Whole numbers</h2>
+        <p>base36, base58 and base62 add <code>encode_int</code> / <code>decode_int</code> for
+        unsigned integers, where leading zeros have no meaning.</p>
+        <div class="example"><pre><code>@base36.encode_int(123456789)  <span class="cmt">// "21i3v9"</span>
+@base62.encode_int(123456789)  <span class="cmt">// "8M0kX"</span>
+@base36.decode_int("21i3v9")   <span class="cmt">// 123456789</span></code></pre></div>
+        <div class="output">21i3v9
+8M0kX
+123456789</div>
+      </section>
+
+      <section id="custom">
+        <h2>Custom alphabets</h2>
+        <p>The positional core is public. Any base-N system is two lines: build an
+        <code>Alphabet</code>, then call the core.</p>
+        <div class="example"><pre><code>let crockford = @moonbase.Alphabet::new(
+  "0123456789ABCDEFGHJKMNPQRSTVWXYZ",   <span class="cmt">// no I, L, O, U</span>
+)
+@moonbase.encode(b"moonbase"[:], crockford)  <span class="cmt">// "6TVVFDSH62WV5"</span></code></pre></div>
+        <div class="output">6TVVFDSH62WV5</div>
+        <p><code>Alphabet::new</code> raises <code>BadAlphabet</code> on a wrong alphabet — a repeated
+        character, a non-ASCII character, or fewer than two digits — because that usually comes
+        from configuration. <code>Alphabet::of</code> is the same thing for a literal in your own
+        source, and aborts instead.</p>
+        <div class="example"><pre><code>let a = @moonbase.Alphabet::of("0123456789abcdef")
+a.base()         <span class="cmt">// 16</span>
+a.char_of(15)    <span class="cmt">// 'f'</span>
+a.value_of('f')  <span class="cmt">// Some(15)</span></code></pre></div>
+        <div class="output">16
+f
+Some(15)</div>
+      </section>
+
+      <section id="errors">
+        <h2>Errors</h2>
+        <p>A bad input names where it broke. There are four reasons, each carrying the index.</p>
+        <div class="example"><pre><code>try @base64.decode("Zm*vYg==") catch {
+  failure =&gt; match failure {
+    Bad(at~, char~) =&gt; println("bad char " + char.to_string() + " at " + at.to_string())
+    Truncated(at~)  =&gt; println("ends mid-group at " + at.to_string())
+    Padding(at~)    =&gt; println("stray '=' at " + at.to_string())
+    Checksum(at~)   =&gt; println("checksum off at " + at.to_string())
+  }
+} noraise { _ =&gt; println("decoded") }</code></pre></div>
+        <div class="output">bad char * at 2</div>
+        <p>Want only a yes-or-no? <code>try?</code> gives you a <code>Result</code> instead of raising.</p>
+        <div class="example"><pre><code>let r = try? @base64.decode(s)   <span class="cmt">// Result[Bytes, Malformed]</span></code></pre></div>
+      </section>
+
+      <section id="lossy">
+        <h2>Lossy decode</h2>
+        <p>A certificate fingerprint is hexadecimal with colons. <code>encode_colons</code> writes
+        it; <code>decode_lossy</code> reads it back without being told about the colons.</p>
+        <div class="example"><pre><code>let print = @base16.encode_colons(b"\xab\xcd\xef"[:])
+print                                           <span class="cmt">// "ab:cd:ef"</span>
+@base16.decode_lossy(print)                     <span class="cmt">// b"\xab\xcd\xef"</span>
+@base16.encode(@base16.decode_lossy(print)[:])  <span class="cmt">// "abcdef"</span></code></pre></div>
+        <div class="output">ab:cd:ef
+b"\xab\xcd\xef"
+abcdef</div>
+        <p>The same lossy reader swallows the newlines in a PEM body and the spaces in a pasted
+        token. base32 and base64 have it too.</p>
+      </section>
+
+      <footer class="rtd-foot">
+        moonbase &middot; Apache-2.0 &middot;
+        <a href="https://github.com/moonbitstack/moonbase">GitHub</a> &middot;
+        <a href="api.html">API Reference</a>
+      </footer>
+    </main>
+  </div>
+  <aside class="rtd-toc">
+    <p class="toc-title">On this page</p>
+    <ul class="toc-nav">
+      <li><a href="#install">Install</a></li>
+      <li><a href="#first">Your first encode</a></li>
+      <li><a href="#faces">The five faces</a></li>
+      <li><a href="#variants">Variants</a></li>
+      <li><a href="#numbers">Whole numbers</a></li>
+      <li><a href="#custom">Custom alphabets</a></li>
+      <li><a href="#errors">Errors</a></li>
+      <li><a href="#lossy">Lossy decode</a></li>
+    </ul>
+  </aside>
+</div>
+<script src="assets/site.js"></script>
+</body>
+</html>

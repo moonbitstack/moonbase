@@ -1,0 +1,50 @@
+name: Documentation
+
+# Publishes the site in docs/ to GitHub Pages. The Pages source must be set to
+# "GitHub Actions" once, in Settings -> Pages, before the first run.
+#
+# The API reference is not hand-written: this workflow regenerates it from the
+# committed pkg.generated.mbti files and the /// doc-comments, then fails if the
+# committed docs/api.html differs. That keeps the reference from drifting.
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: regenerate the API reference
+        run: |
+          python3 scripts/gen_docs.py
+          git diff --exit-code docs/api.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

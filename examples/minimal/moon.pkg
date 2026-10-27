@@ -1,0 +1,6 @@
+// The smallest moonbase program: encode a byte string, then decode it back.
+import {
+  "moonbitstack/moonbase/base64",
+}
+
+pkgtype(kind: "executable")
