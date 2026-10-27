@@ -126,7 +126,8 @@ code, pre, .mono, .sig {
 .rtd-top .brand:hover { text-decoration: none; color: #fff; }
 .top-nav { display: flex; align-items: center; gap: .2rem; margin-left: auto; }
 .top-nav a {
-  color: var(--side-ink); font-size: .92rem; padding: .35rem .7rem;
+  display: inline-flex; align-items: center; height: 32px;
+  color: var(--side-ink); font-size: .92rem; padding: 0 .7rem;
   border-radius: 6px;
 }
 .top-nav a:hover { background: var(--side-2); color: #fff; text-decoration: none; }
@@ -134,17 +135,27 @@ code, pre, .mono, .sig {
   color: #fff; background: rgba(255,255,255,.13); font-weight: 700;
   box-shadow: inset 0 -2px 0 var(--accent);
 }
-.top-nav a.github {
-  display: inline-flex; align-items: center; margin-left: .4rem;
-  color: var(--side-ink);
-}
-.top-nav a.github:hover { color: #fff; }
+/* the two trailing icons share one 32px square hit area, so they line up with
+   each other and with the same-height text links */
+.top-nav a.github,
 .top-nav .theme-btn {
-  background: none; border: 1px solid var(--side-line); color: var(--side-ink);
-  border-radius: 6px; cursor: pointer; font-size: .95rem; line-height: 1;
-  padding: .28rem .5rem; margin-left: .2rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; padding: 0;
+  background: none; border: none; border-radius: 6px;
+  color: var(--side-ink); cursor: pointer;
 }
-.top-nav .theme-btn:hover { color: #fff; border-color: var(--side-ink-dim); }
+.top-nav a.github:hover,
+.top-nav .theme-btn:hover { background: var(--side-2); color: #fff; }
+.top-nav .ic { width: 18px; height: 18px; display: block; }
+/* sun in light mode, moon in dark; the glyph follows prefers-color-scheme
+   until the toggle pins an explicit theme */
+.theme-btn .ic-moon { display: none; }
+:root[data-theme="dark"] .theme-btn .ic-sun { display: none; }
+:root[data-theme="dark"] .theme-btn .ic-moon { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-btn .ic-sun { display: none; }
+  :root:not([data-theme="light"]) .theme-btn .ic-moon { display: block; }
+}
 
 .skip-link {
   position: absolute; left: -999px; top: 0; background: var(--accent);
