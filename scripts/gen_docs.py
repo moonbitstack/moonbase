@@ -21,7 +21,7 @@ import html
 import pathlib
 import re
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+ROOT = pathlib.Path(__file__).resolve().parent.parent / "src"
 
 # package name -> (mbti file, [source files that make up the package], blurb)
 PACKAGES = [
@@ -307,7 +307,7 @@ def main() -> None:
             '</section>' % (name, name, esc(blurb), cards)
         )
     page = shell("API Reference — moonbase", "\n".join(parts))
-    out = ROOT / "docs" / "api.html"
+    out = ROOT.parent / "docs" / "api.html"
     out.parent.mkdir(exist_ok=True)
     out.write_text(page, encoding="utf-8")
     total = sum(len(parse_mbti(ROOT / m)) for _, m, _, _ in PACKAGES)

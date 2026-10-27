@@ -448,7 +448,7 @@ tbody tr:nth-child(even) { background: var(--panel); }
   border: 1px solid var(--line); background: var(--bg); color: var(--ink);
 }
 .viz-controls input[type="text"] { font-family: "Roboto Mono", monospace; min-width: 240px; }
-.viz { display: grid; gap: .8rem; margin: 1rem 0; }
+.viz { display: grid; grid-template-columns: minmax(0, 1fr); gap: .8rem; margin: 1rem 0; }
 .viz-step {
   background: var(--panel); border: 1px solid var(--line);
   border-radius: 9px; padding: .7rem .9rem;
@@ -502,3 +502,5 @@ tbody tr:nth-child(even) { background: var(--panel); }
   main > h1 { font-size: 1.7rem; }
   .top-nav a:not(.active):not(.github) { display: none; }
 }
+
+html, button, input, textarea, select { font-variant-ligatures: no-contextual; }

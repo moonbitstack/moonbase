@@ -123,12 +123,12 @@ character, or fewer than two digits — because it often arrives from configurat
 
 ## Examples
 
-- [`examples/minimal`](examples/minimal) — the smallest program that encodes and decodes.
-- [`examples/tour`](examples/tour) — every face of every package, including a failure.
+- [`src/examples/minimal`](src/examples/minimal) — the smallest program that encodes and decodes.
+- [`src/examples/tour`](src/examples/tour) — every face of every package, including a failure.
 
 ```sh
-moon run examples/minimal --target wasm-gc
-moon run examples/tour --target wasm-gc
+moon run src/examples/minimal --target wasm-gc
+moon run src/examples/tour --target wasm-gc
 ```
 
 ## Licence

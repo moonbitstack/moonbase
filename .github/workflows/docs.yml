@@ -1,16 +1,14 @@
-name: Documentation
-
-# Publishes the site in docs/ to GitHub Pages. The Pages source must be set to
-# "GitHub Actions" once, in Settings -> Pages, before the first run.
-#
-# The API reference is not hand-written: this workflow regenerates it from the
-# committed pkg.generated.mbti files and the /// doc-comments, then fails if the
-# committed docs/api.html differs. That keeps the reference from drifting.
+name: Docs
 
 on:
   push:
     branches:
       - master
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "scripts/**"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -20,31 +18,42 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-26.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: regenerate the API reference
+      - name: install moon
         run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: build the site
+        run: |
+          moon update
+          moon info --target all
           python3 scripts/gen_docs.py
           git diff --exit-code docs/api.html
 
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: configure pages
+        uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - name: upload the site
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
