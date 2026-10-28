@@ -182,7 +182,15 @@
     var data = "";
     for (var k = 0; k < words.length; k++) data += ALPHA.bech32[words[k]];
     for (var c = 0; c < 6; c++) data += ALPHA.bech32[(residue >>> (5 * (5 - c))) & 31];
-    return hrp + "1" + data;
+    var text = hrp + "1" + data;
+    // BIP 173 caps the whole string, checksum included, at 90 characters and the
+    // library raises Bad(at=90) past that. The demo has to refuse the same
+    // inputs, or it shows strings `decode` would reject.
+    if (text.length > 90) {
+      throw new Error("a bech32 string is capped at 90 characters, and this one is " +
+        text.length);
+    }
+    return text;
   }
 
   /* ---- multibase -------------------------------------------------------- */
@@ -266,6 +274,16 @@
     // the rows the homepage playground shows
     rows: function (text) {
       var by = bytesOf(text);
+      // bech32 is the one encoding here that can refuse ordinary typing: BIP 173
+      // caps the string at 90 characters, so a sentence-length playground value
+      // is already too long for it.
+      var hrp = "moonbase";
+      var bech;
+      try {
+        bech = bech32(hrp, by);
+      } catch (failure) {
+        bech = "\u2014 " + failure.message;
+      }
       return [
         ["base2", Moonbase.byName("base2", by)],
         ["base8", Moonbase.byName("base8", by)],
@@ -280,7 +298,9 @@
         ["base64", b64(by, false, true)],
         ["base64 url", b64(by, true, false)],
         ["base85", a85(by)],
-        ["base256emoji", emoji(by)]
+        ["base256emoji", emoji(by)],
+        ["bech32 (" + hrp + ")", bech],
+        ["multibase (z, base58btc)", "z" + baseN(by, ALPHA.base58)]
       ];
     }
   };

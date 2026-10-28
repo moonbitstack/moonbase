@@ -311,7 +311,14 @@
     var hrp = "moonbase";
 
     var out = step("1 \u00b7 input bytes (UTF-8)", byteRow(bytes));
-    var result = kind === "bech32" ? M.bech32(hrp, bytes) : M.show(kind, bytes);
+    var result;
+    try {
+      result = kind === "bech32" ? M.bech32(hrp, bytes) : M.show(kind, bytes);
+    } catch (failure) {
+      // The library refuses this input, so the page must not pretend otherwise.
+      vizOut.innerHTML = out + '<div class="t">' + failure.message + "</div>";
+      return;
+    }
     if (kind === "bech32") {
       out += checksum(bytes, result, hrp);
     } else if (how.mode === "pack") {

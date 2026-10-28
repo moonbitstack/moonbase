@@ -54,8 +54,46 @@ for (const item of cases) {
   }
 }
 
-if (failed) {
-  console.log(failed + " of " + cases.length + " documentation vectors disagree");
+// The playground on the homepage is assembled by hand, so none of the vectors
+// above would notice a package that never got a row. Pin the labels, then check
+// the two rows whose values are derived rather than copied.
+const PLAYGROUND = "Hello, MoonBit!";
+const playgroundBytes = new TextEncoder().encode(PLAYGROUND);
+const rows = Moonbase.rows(PLAYGROUND);
+const WANT_ROWS = [
+  "base2", "base8", "base10", "base16", "base32", "base32 hex", "base36",
+  "base45", "base58", "base62", "base64", "base64 url", "base85",
+  "base256emoji", "bech32 (moonbase)", "multibase (z, base58btc)",
+];
+
+let rowsFailed = 0;
+function rowProblem(text) {
+  rowsFailed++;
+  console.log("  playground " + text);
+}
+
+const labels = rows.map((row) => row[0]);
+if (JSON.stringify(labels) !== JSON.stringify(WANT_ROWS)) {
+  rowProblem(
+    "rows are " + JSON.stringify(labels) + "\n    want " + JSON.stringify(WANT_ROWS)
+  );
+}
+for (const [label, value] of rows) {
+  if (typeof value !== "string" || value === "") rowProblem(label + " is empty");
+}
+const rowOf = (label) => (rows.find((row) => row[0] === label) || [])[1];
+if (rowOf("bech32 (moonbase)") !== Moonbase.bech32("moonbase", playgroundBytes)) {
+  rowProblem("the bech32 row disagrees with bech32()");
+}
+if (rowOf("multibase (z, base58btc)") !== "z" + Moonbase.byName("base58btc", playgroundBytes)) {
+  rowProblem("the multibase row disagrees with base58");
+}
+
+if (failed || rowsFailed) {
+  if (failed) {
+    console.log(failed + " of " + cases.length + " documentation vectors disagree");
+  }
   process.exit(1);
 }
 console.log("all " + cases.length + " documentation vectors reproduce");
+console.log("the playground lists all " + WANT_ROWS.length + " rows and they agree with their codecs");

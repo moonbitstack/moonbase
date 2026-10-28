@@ -91,11 +91,14 @@
         <div class="callout">
           <span class="tag">Note</span>
           <p>The demo runs the encoders in JavaScript, ported from the MoonBit sources.
-          <code>scripts/check_docs.py</code> replays the library's own vectors — multibase's
-          <code>tests/*.csv</code> fixtures and every specification example — through that port,
-          so a drift between the demo and the library fails the build. base10, base36, base58 and
-          base62 read the bytes as one big integer; the rest pack bits, except base45 and base85,
-          which group bytes into a number first.</p>
+          <code>scripts/check_docs.py</code> replays the library's own vectors —
+          <code>scripts/vectors/multibase/*.csv</code> and every specification example — through
+          that port, so a drift between the demo and the library fails the build. base10, base36,
+          base58 and base62 read the bytes as one big integer; base2, base8, base16, base32 and
+          base64 pack bits; base45 and base85 turn a group of bytes into a number first;
+          base256emoji is a 256-entry table; bech32 packs five bits and appends a BCH checksum,
+          which is why its row gives up on a long line — BIP 173 caps the whole string at 90
+          characters.</p>
         </div>
       </section>
 
