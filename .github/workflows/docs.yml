@@ -43,6 +43,11 @@ jobs:
           python3 scripts/gen_docs.py
           git diff --exit-code docs/api.html
 
+      - name: the site's encoders still agree with the library
+        run: |
+          python3 scripts/gen_vectors.py check
+          python3 scripts/check_docs.py
+
 
       - name: configure pages
         uses: actions/configure-pages@v6

@@ -4,9 +4,9 @@
    - copy-to-clipboard buttons
    - scroll-spy for the right-hand "On this page" TOC and the sidebar
    - wide-glyph wrapping so trailing comments stay aligned in code blocks
-   - a faithful, output-verified port of the library's encoders (the live demo
-     and the showcase visualiser both run the same algorithms the MoonBit
-     source ships; outputs were checked against `moon run` on every backend)
+   - the homepage playground and the showcase visualiser. Both encode with
+     `assets/codecs.js`, which `scripts/check_docs.py` holds to the library's own
+     vectors; nothing in this file knows what a base45 digit is.
    ========================================================================== */
 (function () {
   "use strict";
@@ -30,22 +30,26 @@
   document.querySelectorAll("[data-copy]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       var text = btn.getAttribute("data-copy");
-      var done = function () {
-        var t = btn.textContent;
-        btn.textContent = "copied";
-        btn.classList.add("ok");
-        setTimeout(function () { btn.textContent = t; btn.classList.remove("ok"); }, 1100);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, function () {});
-      } else {
-        var ta = document.createElement("textarea");
-        ta.value = text; document.body.appendChild(ta); ta.select();
-        try { document.execCommand("copy"); done(); } catch (e) {}
-        document.body.removeChild(ta);
-      }
+      copy(text, btn);
     });
   });
+
+  function copy(text, btn) {
+    var label = btn.textContent;
+    var done = function () {
+      btn.textContent = "copied";
+      btn.classList.add("ok");
+      setTimeout(function () { btn.textContent = label; btn.classList.remove("ok"); }, 1100);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () {});
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
 
   /* ---- scroll-spy (TOC + sidebar) ------------------------------------- */
   var tocLinks = Array.prototype.slice.call(document.querySelectorAll(".toc-nav a"));
@@ -102,125 +106,67 @@
   }
   document.querySelectorAll("pre code, pre, code.align").forEach(wrapWide);
 
-  /* ========================================================================
-     Codec engine — mirrors moonbase exactly
-     ====================================================================== */
-  var ALPHA = {
-    base16: "0123456789abcdef",
-    base16u: "0123456789ABCDEF",
-    base32: "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567",
-    base32hex: "0123456789ABCDEFGHIJKLMNOPQRSTUV",
-    base36: "0123456789abcdefghijklmnopqrstuvwxyz",
-    base58: "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz",
-    base62: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-    base64: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
-    base64url: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-  };
+  var M = window.Moonbase;
+  if (!M) return;
 
-  function bytesOf(str) { return new TextEncoder().encode(str); }
+  function hex2(n) { return (n < 16 ? "0" : "") + n.toString(16); }
 
-  function b16(bytes, upper) {
-    var a = upper ? ALPHA.base16u : ALPHA.base16;
-    var s = "";
-    for (var i = 0; i < bytes.length; i++) {
-      s += a[(bytes[i] >> 4) & 15] + a[bytes[i] & 15];
-    }
-    return s;
-  }
-
-  function pack(bytes, bits, alphabet, padLen, pad) {
-    var A = alphabet;
-    var mask = (1 << bits) - 1;
-    var out = "", buf = 0, held = 0;
-    for (var i = 0; i < bytes.length; i++) {
-      buf = (buf << 8) | bytes[i];
-      held += 8;
-      while (held >= bits) {
-        held -= bits;
-        out += A[(buf >> held) & mask];
-      }
-      buf &= (1 << held) - 1;
-    }
-    if (held > 0) out += A[(buf << (bits - held)) & mask];
-    if (pad) while (out.length % padLen !== 0) out += "=";
-    return out;
-  }
-  function b32(bytes, hex) { return pack(bytes, 5, hex ? ALPHA.base32hex : ALPHA.base32, 8, true); }
-  function b64(bytes, url, pad) { return pack(bytes, 6, url ? ALPHA.base64url : ALPHA.base64, 4, pad !== false); }
-
-  // big-integer over the bytes (leading zero bytes -> leading zero digits)
-  function baseN(bytes, alpha) {
-    var base = BigInt(alpha.length);
-    var n = 0n;
-    for (var i = 0; i < bytes.length; i++) n = (n << 8n) | BigInt(bytes[i]);
+  function bitString(bytes) {
     var out = "";
-    if (n === 0n) {
-      out = alpha[0];
-    } else {
-      while (n > 0n) { out = alpha[Number(n % base)] + out; n /= base; }
+    for (var i = 0; i < bytes.length; i++) {
+      out += ("00000000" + bytes[i].toString(2)).slice(-8);
     }
-    var z = 0;
-    for (var j = 0; j < bytes.length; j++) { if (bytes[j] === 0) z++; else break; }
-    return alpha[0].repeat(z) + out;
-  }
-
-  // whole-number mode (base36/58/62 encode_int)
-  function baseNInt(value, alpha) {
-    var base = BigInt(alpha.length);
-    var v = BigInt(value);
-    if (v === 0n) return alpha[0];
-    var out = "";
-    while (v > 0n) { out = alpha[Number(v % base)] + out; v /= base; }
     return out;
   }
 
-  var Moonbase = {
-    ALPHA: ALPHA,
-    bytesOf: bytesOf,
-    b16: b16, b32: b32, b64: b64, baseN: baseN, baseNInt: baseNInt,
-    // the nine rows the homepage demo shows
-    all: function (text) {
-      var by = bytesOf(text);
-      return [
-        ["base16", b16(by, false)],
-        ["base16 upper", b16(by, true)],
-        ["base32", b32(by, false)],
-        ["base32 hex", b32(by, true)],
-        ["base36", baseN(by, ALPHA.base36)],
-        ["base58", baseN(by, ALPHA.base58)],
-        ["base62", baseN(by, ALPHA.base62)],
-        ["base64", b64(by, false, true)],
-        ["base64 url", b64(by, true, false)]
-      ];
+  function byteRow(bytes) {
+    var cells = [];
+    for (var i = 0; i < bytes.length; i++) {
+      var b = bytes[i];
+      var ch = b >= 32 && b < 127 ? String.fromCharCode(b) : "\u00b7";
+      cells.push('<span class="byte"><span class="ch">' + ch + "</span>" + hex2(b) + "</span>");
     }
-  };
-  window.Moonbase = Moonbase;
+    return '<div class="bytes">' + cells.join("") + "</div>";
+  }
+
+  function chars(text) {
+    // `Array.from` iterates code points: splitting on UTF-16 units would cut an
+    // emoji in half, and base256emoji's whole alphabet is emoji.
+    return '<div class="chars">' + Array.from(text).map(function (c) {
+      return '<span class="ch">' + c + "</span>";
+    }).join("") + "</div>";
+  }
+
+  function step(title, body) {
+    return '<div class="viz-step"><div class="t">' + title + "</div>" + body + "</div>";
+  }
 
   /* ---- homepage playground -------------------------------------------- */
   var input = document.getElementById("pg-in");
   if (input) {
     var rows = document.getElementById("pg-rows");
-    Moonbase.ALL_KEYS = ["base16","base16 upper","base32","base32 hex","base36","base58","base62","base64","base64 url"];
-    function render() {
-      var data = Moonbase.all(input.value);
-      if (rows) {
-        rows.innerHTML = "";
-        data.forEach(function (row) {
-          var r = document.createElement("div");
-          r.className = "pg-row";
-          var lbl = document.createElement("span"); lbl.className = "lbl"; lbl.textContent = row[0];
-          var val = document.createElement("span"); val.className = "val"; val.textContent = row[1];
-          var cp = document.createElement("button"); cp.className = "copy"; cp.textContent = "copy";
-          cp.addEventListener("click", function () {
-            var done = function () { cp.textContent = "copied"; cp.classList.add("ok");
-              setTimeout(function () { cp.textContent = "copy"; cp.classList.remove("ok"); }, 1000); };
-            if (navigator.clipboard) navigator.clipboard.writeText(row[1]).then(done, function () {});
-          });
-          r.appendChild(lbl); r.appendChild(val); r.appendChild(cp);
-          rows.appendChild(r);
-        });
-      }
-    }
+    var render = function () {
+      if (!rows) return;
+      rows.innerHTML = "";
+      M.rows(input.value).forEach(function (row) {
+        var line = document.createElement("div");
+        line.className = "pg-row";
+        var lbl = document.createElement("span");
+        lbl.className = "lbl";
+        lbl.textContent = row[0];
+        var val = document.createElement("span");
+        val.className = "val";
+        val.textContent = row[1];
+        var btn = document.createElement("button");
+        btn.className = "copy";
+        btn.textContent = "copy";
+        btn.addEventListener("click", function () { copy(row[1], btn); });
+        line.appendChild(lbl);
+        line.appendChild(val);
+        line.appendChild(btn);
+        rows.appendChild(line);
+      });
+    };
     input.addEventListener("input", render);
     render();
   }
@@ -231,69 +177,156 @@
   var vizInput = document.getElementById("viz-text");
   var vizEnc = document.getElementById("viz-enc");
   var vizOut = document.getElementById("viz-out");
-  if (vizInput && vizEnc && vizOut) {
-    function hex2(n) { return n.toString(16).padStart(2, "0"); }
-    function visByteRows(bytes) {
-      var cells = [];
-      for (var i = 0; i < bytes.length; i++) {
-        var b = bytes[i];
-        var ch = b >= 32 && b < 127 ? String.fromCharCode(b) : "\u00b7";
-        cells.push('<span class="byte"><span class="ch">' + ch + "</span>" + hex2(b) + "</span>");
-      }
-      return '<div class="bytes">' + cells.join("") + "</div>";
-    }
-    function visualize() {
-      var text = vizInput.value;
-      var bytes = bytesOf(text);
-      var enc = vizEnc.value;
-      var steps = [];
-      steps.push('<div class="viz-step"><div class="t">1 · input bytes (UTF-8)</div>' + visByteRows(bytes) + "</div>");
 
-      if (enc === "base16") {
-        var bits = "";
-        for (var i = 0; i < bytes.length; i++) bits += ("00000000" + bytes[i].toString(2)).slice(-8);
-        steps.push('<div class="viz-step"><div class="t">2 · group the bits by 4</div><div class="bits">' +
-          bits.replace(/(.{4})/g, '<span class="grp">$1</span> ') + "</div></div>");
-        steps.push('<div class="viz-step"><div class="t">3 · each group is one hexadecimal digit</div><div class="chars">' +
-          b16(bytes, false).split("").map(function (c) { return '<span class="ch">' + c + "</span>"; }).join("") + "</div></div>");
-        vizOut.innerHTML = steps.join("") + '<div class="result">' + b16(bytes, false) + "</div>";
-      } else if (enc === "base32" || enc === "base64") {
-        var bits2 = "";
-        for (var j = 0; j < bytes.length; j++) bits2 += ("00000000" + bytes[j].toString(2)).slice(-8);
-        var g = enc === "base32" ? 5 : 6;
-        var grouped = "";
-        for (var k = 0; k < bits2.length; k += g) grouped += '<span class="grp">' + bits2.slice(k, k + g).padEnd(g, "0") + "</span> ";
-        steps.push('<div class="viz-step"><div class="t">2 · group the bits by ' + g + '</div><div class="bits">' + grouped + "</div></div>");
-        steps.push('<div class="viz-step"><div class="t">3 · each group maps to one alphabet character (short groups are right-padded)</div></div>');
-        var res = enc === "base32" ? b32(bytes, false) : b64(bytes, false, true);
-        vizOut.innerHTML = steps.join("") + '<div class="result">' + res + "</div>";
-      } else {
-        // big-integer: repeated division by the base
-        var alpha = ALPHA[enc];
-        var base = BigInt(alpha.length);
-        var n = 0n;
-        for (var m = 0; m < bytes.length; m++) n = (n << 8n) | BigInt(bytes[m]);
-        var rows = [];
-        var work = n;
-        if (work === 0n) {
-          rows.push('<tr><td>0</td><td>' + alpha[0] + "</td></tr>");
-        } else {
-          while (work > 0n) {
-            var r = work % base;
-            rows.push("<tr><td>" + work.toString() + "</td><td>" + alpha[Number(r)] + "</td></tr>");
-            work = work / base;
-          }
-        }
-        var z = 0;
-        for (var p = 0; p < bytes.length; p++) { if (bytes[p] === 0) z++; else break; }
-        var zeroNote = z > 0 ? '<div class="t">leading zero bytes become leading "' + alpha[0] + '" digits (' + z + ")</div>" : "";
-        steps.push('<div class="viz-step"><div class="t">2 · the bytes are one big integer</div><div class="result" style="border-left-color:var(--accent)">' + n.toString() + "</div></div>");
-        steps.push('<div class="viz-step">' + zeroNote + '<div class="t">3 · divide by ' + base + ', the remainder is the next digit (right to left)</div>' +
-          '<table><thead><tr><th>value</th><th>digit</th></tr></thead><tbody>' + rows.reverse().join("") + "</tbody></table></div>");
-        var res2 = baseN(bytes, alpha);
-        vizOut.innerHTML = steps.join("") + '<div class="result">' + res2 + "</div>";
+  // How each encoding gets from bytes to characters, which is the only thing
+  // this page is about.
+  var HOW = {
+    base2: { mode: "pack", width: 1 },
+    base8: { mode: "pack", width: 3 },
+    base16: { mode: "pack", width: 4 },
+    base32: { mode: "pack", width: 5 },
+    base64: { mode: "pack", width: 6 },
+    base45: { mode: "group", size: 2, base: 45, digits: 3, first: "last" },
+    base85: { mode: "group", size: 4, base: 85, digits: 5, first: "first" },
+    base10: { mode: "divide" },
+    base36: { mode: "divide" },
+    base58: { mode: "divide" },
+    base62: { mode: "divide" },
+    base256emoji: { mode: "substitute" },
+    bech32: { mode: "checksum" }
+  };
+
+  function packing(bytes, how, text) {
+    var bits = bitString(bytes);
+    var grouped = "";
+    for (var i = 0; i < bits.length; i += how.width) {
+      grouped += '<span class="grp">' + bits.slice(i, i + how.width).padEnd(how.width, "0") + "</span> ";
+    }
+    return step("2 \u00b7 group the bits by " + how.width, '<div class="bits">' + grouped + "</div>") +
+      step("3 \u00b7 each group is one digit (a short group is shifted up and zero-filled)", chars(text));
+  }
+
+  function grouping(bytes, how, text) {
+    var rowsHtml = "";
+    var at = 0;
+    for (; at + how.size <= bytes.length; at += how.size) {
+      var value = 0;
+      var raw = [];
+      for (var k = 0; k < how.size; k++) {
+        value = value * 256 + bytes[at + k];
+        raw.push(hex2(bytes[at + k]));
+      }
+      rowsHtml += "<tr><td>" + raw.join(" ") + "</td><td>" + value + "</td></tr>";
+    }
+    var tail = "";
+    if (at < bytes.length) {
+      var rest = bytes.slice(at);
+      var short = 0;
+      for (var j = 0; j < rest.length; j++) short = short * 256 + rest[j];
+      tail = "<tr><td>" + Array.prototype.map.call(rest, hex2).join(" ") + "</td><td>" +
+        short + " (a short tail)</td></tr>";
+    }
+    return step(
+      "2 \u00b7 every " + how.size + " bytes are one number",
+      "<table><thead><tr><th>bytes</th><th>value</th></tr></thead><tbody>" +
+        rowsHtml + tail + "</tbody></table>"
+    ) + step(
+      "3 \u00b7 the number in base " + how.base + ", " + how.digits + " digits, " +
+        (how.first === "last" ? "least significant first" : "most significant first"),
+      chars(text)
+    );
+  }
+
+  function dividing(bytes, text, kind) {
+    var alpha = M.ALPHA[kind];
+    var base = alpha.length;
+    var n = 0n;
+    for (var i = 0; i < bytes.length; i++) n = (n << 8n) | BigInt(bytes[i]);
+    var digits = [];
+    var work = n;
+    if (work === 0n) {
+      digits.push('<tr><td>0</td><td>' + alpha[0] + "</td></tr>");
+    } else {
+      while (work > 0n) {
+        digits.push("<tr><td>" + work.toString() + "</td><td>" + alpha[Number(work % BigInt(base))] + "</td></tr>");
+        work = work / BigInt(base);
       }
     }
+    var zeros = 0;
+    for (var p = 0; p < bytes.length; p++) { if (bytes[p] === 0) zeros++; else break; }
+    var zeroNote = zeros > 0
+      ? "<div class=\"t\">leading zero bytes become leading \"" + alpha[0] + "\" digits (" + zeros + ")</div>"
+      : "";
+    return step("2 \u00b7 the bytes are one big integer",
+      '<div class="result" style="border-left-color:var(--accent)">' + n.toString() + "</div>") +
+      step("3 \u00b7 divide by " + base + ", the remainder is the next digit (right to left)" + zeroNote,
+        "<table><thead><tr><th>value</th><th>digit</th></tr></thead><tbody>" +
+          digits.reverse().join("") + "</tbody></table>") +
+      step("4 \u00b7 read the digits back to front", chars(text));
+  }
+
+  function substituting(bytes, text) {
+    var cells = [];
+    var glyphs = Array.from(text);
+    for (var i = 0; i < bytes.length; i++) {
+      cells.push('<span class="byte"><span class="ch">' + glyphs[i] + "</span>" + hex2(bytes[i]) + "</span>");
+    }
+    return step("2 \u00b7 one character per byte value, looked up in a 256-entry table",
+      '<div class="bytes">' + cells.join("") + "</div>" +
+      '<div class="t">' + bytes.length + " bytes, " + glyphs.length +
+      " characters \u2014 no bit packing, no padding, no length rule</div>") +
+      step("3 \u00b7 the result", chars(text));
+  }
+
+  function checksum(bytes, text, hrp) {
+    var words = [];
+    var acc = 0, bits = 0;
+    for (var i = 0; i < bytes.length; i++) {
+      acc = (acc << 8) | bytes[i];
+      bits += 8;
+      while (bits >= 5) { bits -= 5; words.push((acc >> bits) & 31); }
+      acc &= (1 << bits) - 1;
+    }
+    if (bits) words.push((acc << (5 - bits)) & 31);
+    var body = words.map(function (w) { return M.ALPHA.bech32[w]; }).join("");
+    var sum = text.slice(text.length - 6);
+    return step("2 \u00b7 the payload regrouped from 8 bits to 5",
+      '<div class="bits">' + words.map(function (w) {
+        return '<span class="grp">' + ("00000" + w.toString(2)).slice(-5) + "</span>";
+      }).join(" ") + "</div>") +
+      step("3 \u00b7 the prefix, the data, and six checksum characters",
+        '<div class="result" style="border-left-color:var(--accent)">' +
+        hrp + "<b>1</b>" + body + "<b>" + sum + "</b></div>" +
+        '<div class="t">the checksum is a BCH code over the prefix and every data group \u2014 ' +
+        "a typo anywhere, including in the prefix, lands here</div>") +
+      step("4 \u00b7 the result", chars(text));
+  }
+
+  function visualize() {
+    if (!vizInput || !vizEnc || !vizOut) return;
+    var text = vizInput.value;
+    var kind = vizEnc.value;
+    var bytes = M.bytesOf(text);
+    var how = HOW[kind] || HOW.base16;
+    var hrp = "moonbase";
+
+    var out = step("1 \u00b7 input bytes (UTF-8)", byteRow(bytes));
+    var result = kind === "bech32" ? M.bech32(hrp, bytes) : M.show(kind, bytes);
+    if (kind === "bech32") {
+      out += checksum(bytes, result, hrp);
+    } else if (how.mode === "pack") {
+      out += packing(bytes, how, result);
+    } else if (how.mode === "group") {
+      out += grouping(bytes, how, result);
+    } else if (how.mode === "divide") {
+      out += dividing(bytes, result, kind);
+    } else {
+      out += substituting(bytes, result);
+    }
+    vizOut.innerHTML = out + '<div class="result">' + result + "</div>";
+  }
+
+  if (vizInput && vizEnc && vizOut) {
     vizInput.addEventListener("input", visualize);
     vizEnc.addEventListener("change", visualize);
     visualize();

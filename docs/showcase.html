@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Showcase — how the encoders work — moonbase</title>
-<meta name="description" content="An interactive look at how moonbase turns bytes into base16, base32, base36, base58, base62 and base64.">
+<meta name="description" content="An interactive look at how moonbase turns bytes into base2 through base85, bech32 and multibase.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Slab:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -30,9 +30,11 @@
     <p class="side-title">moonbase</p>
     <ul class="side-nav">
       <li><a href="#viz">Try it</a></li>
-      <li><a href="#mechanisms">Two mechanisms</a></li>
+      <li><a href="#mechanisms">Four mechanisms</a></li>
       <li><a href="#packing">Bit packing</a></li>
       <li><a href="#division">Repeated division</a></li>
+      <li><a href="#grouping">One number a group</a></li>
+      <li><a href="#checksum">A checksum</a></li>
     </ul>
     <a class="side-github" href="https://github.com/moonbitstack/moonbase">View source on GitHub</a>
   </aside>
@@ -41,19 +43,27 @@
     <main>
       <h1>How the encoders work</h1>
       <p class="lede">Pick an encoding, type something, and watch the bytes turn into characters.
-      The two mechanisms below are the whole library — every one of the six builds on one of them.</p>
+      The four mechanisms below are the whole library — every one of the thirteen builds on one of
+      them.</p>
 
       <section id="viz">
         <h2>Try it</h2>
         <div class="viz-controls">
           <label for="viz-enc">Encoding</label>
           <select id="viz-enc">
+            <option value="base2">base2</option>
+            <option value="base8">base8</option>
             <option value="base16">base16</option>
             <option value="base32">base32</option>
-            <option value="base64">base64</option>
+            <option value="base45">base45</option>
+            <option value="base64" selected>base64</option>
+            <option value="base85">base85 (Ascii85)</option>
+            <option value="base10">base10</option>
             <option value="base36">base36</option>
             <option value="base58">base58</option>
             <option value="base62">base62</option>
+            <option value="base256emoji">base256emoji</option>
+            <option value="bech32">bech32</option>
           </select>
           <label for="viz-text">Text</label>
           <input id="viz-text" type="text" value="moonbase" spellcheck="false" aria-label="Text to encode">
@@ -62,42 +72,84 @@
       </section>
 
       <section id="mechanisms">
-        <h2>Two mechanisms</h2>
+        <h2>Four mechanisms</h2>
         <p>An encoding answers one question: how do I write this byte, or this run of bits, using
-        only characters from a small alphabet? moonbase answers it in exactly two ways.</p>
+        only characters from a small alphabet? moonbase answers it in exactly four ways, and which
+        one an encoding uses decides everything about how it handles a leading zero, a short tail,
+        and a string you can stream.</p>
         <div class="cards">
-          <div class="card"><span class="tag">base16 · base32 · base64</span><h3>Bit packing</h3>
-            <p>Read the bytes as one long bit string, then cut it into fixed-width groups — 4, 5 or
-            6 bits. Each group is an index into the alphabet. The trailing group is padded.</p></div>
-          <div class="card"><span class="tag">base36 · base58 · base62</span><h3>Repeated division</h3>
+          <div class="card"><span class="tag">base2 · base8 · base16 · base32 · base64</span><h3>Bit packing</h3>
+            <p>Read the bytes as one long bit string, then cut it into fixed-width groups — 1, 3, 4,
+            5 or 6 bits. Each group is an index into the alphabet. The trailing group is shifted up
+            and zero-filled.</p></div>
+          <div class="card"><span class="tag">base10 · base36 · base58 · base62</span><h3>Repeated division</h3>
             <p>Read the bytes as one big integer, then divide by the base again and again. Each
             remainder is a digit, read off from the last division to the first.</p></div>
+          <div class="card"><span class="tag">base45 · base85</span><h3>One number a group</h3>
+            <p>Two or four bytes at a time become one number, written in base 45 or 85 with a fixed
+            number of digits. Short, local, and cheap to decode on a small device.</p></div>
+          <div class="card"><span class="tag">base256emoji · bech32</span><h3>Substitution and checksum</h3>
+            <p>base256emoji is a 256-entry table, one character a byte, with no arithmetic at all.
+            bech32 reads five bits a group, then appends a BCH checksum over the prefix and the
+            data.</p></div>
         </div>
       </section>
 
       <section id="packing">
         <h2>Bit packing</h2>
         <p>base16 takes 4 bits at a time, so one byte is exactly two characters and a leading
-        <code>0x00</code> stays <code>"00"</code>. base32 takes 5 bits, base64 takes 6. The
-        leftover bits of the last group are shifted up and padded with zeros, then the output is
-        padded with <code>=</code> to a full group: eight characters for base32, four for base64.</p>
+        <code>0x00</code> stays <code>"00"</code>. base32 takes 5 bits, base64 takes 6, base2 takes
+        one and base8 takes three. The leftover bits of the last group are shifted up and padded
+        with zeros; base32 and base64 then pad the output with <code>=</code> to a full group, and
+        base2 and base8 cannot, because their groups divide a byte exactly.</p>
         <p>This is why a base64 string of <code>b"moonbase"</code> is <code>bW9vbmJhc2U=</code> —
         eleven characters of payload, one <code>=</code> of padding. The <a href="index.html#demo">live
         demo</a> shows the finished strings; this page shows the groups.</p>
+        <p>Because the group never crosses a byte boundary in base2, base8 and base16, those three
+        are the ones a stream can encode as it reads: nothing has to wait for the next chunk.</p>
       </section>
 
       <section id="division">
         <h2>Repeated division</h2>
-        <p>base36, base58 and base62 read the whole byte string as one big-endian integer. To write
-        it in base <em>N</em>, divide by <em>N</em> and keep the remainder; repeat on the quotient
-        until it reaches zero. The remainders, reversed, are the digits.</p>
+        <p>base10, base36, base58 and base62 read the whole byte string as one big-endian integer.
+        To write it in base <em>N</em>, divide by <em>N</em> and keep the remainder; repeat on the
+        quotient until it reaches zero. The remainders, reversed, are the digits.</p>
         <p>Leading zero bytes are special: an integer has no leading zeros, so the encoder counts
         them first and writes that many zero digits up front. That is why
         <code>b"\x00\x00\x01"</code> in base58 is <code>112</code> — two leading <code>1</code>s
         from the zeros, then the <code>1</code> itself.</p>
-        <p>The <code>encode_int</code> functions take this path directly on a
-        <code>UInt64</code>, skipping the byte step, which is what you want for a whole number that
-        never was a byte string.</p>
+        <p>This is also why these four have no streaming face: the first digit depends on the last
+        byte, so there is nothing to hand back until the input ends. The
+        <code>encode_int</code> functions take the same path on a <code>UInt64</code>, and
+        <code>encode_big</code> on a <code>BigInt</code>, skipping the byte step entirely.</p>
+      </section>
+
+      <section id="grouping">
+        <h2>One number a group</h2>
+        <p>base45 and base85 sit between the two: they do not read the whole payload as one
+        integer, and they do not cut it into bits. They take a fixed number of bytes at a time and
+        write that group's value in a larger base.</p>
+        <p>base45 takes two bytes — a number below 65536 — and writes three base-45 digits, least
+        significant first. Three digits of base 45 are more than a QR code's alphanumeric mode needs,
+        which is the point: the characters are all ones that mode can hold, so the payload fits in a
+        smaller symbol. There is no padding; an odd final byte is two digits.</p>
+        <p>base85 takes four bytes and writes five base-85 digits, most significant first. Adobe's
+        Ascii85 also lets a zero group be written as a single <code>z</code>, and shortens the last
+        group to <code>n + 1</code> characters; ZeroMQ's Z85 refuses a tail that is not a whole
+        group, because its frame is four bytes or nothing.</p>
+      </section>
+
+      <section id="checksum">
+        <h2>A checksum</h2>
+        <p>bech32 is the one encoding here that carries its own integrity check. The payload is
+        regrouped from eight bits to five, the human-readable prefix is expanded into its high bits
+        and low bits, and a BCH code over both produces six more characters. A single typo anywhere
+        — including in the prefix, which says which network an address belongs to — fails that code
+        and is reported at the index where the reader stopped believing.</p>
+        <p>BIP 173 and BIP 350 differ only in one constant of that code: witness version 0 uses
+        <code>Bech32</code>, every later version uses <code>Bech32m</code>, and no string is valid
+        under both. That is a rule about addresses, not about bech32 — the library will happily
+        write either, which is why the choice is a named argument.</p>
       </section>
 
       <footer class="rtd-foot">
@@ -111,12 +163,15 @@
     <p class="toc-title">On this page</p>
     <ul class="toc-nav">
       <li><a href="#viz">Try it</a></li>
-      <li><a href="#mechanisms">Two mechanisms</a></li>
+      <li><a href="#mechanisms">Four mechanisms</a></li>
       <li><a href="#packing">Bit packing</a></li>
       <li><a href="#division">Repeated division</a></li>
+      <li><a href="#grouping">One number a group</a></li>
+      <li><a href="#checksum">A checksum</a></li>
     </ul>
   </aside>
 </div>
+<script src="assets/codecs.js"></script>
 <script src="assets/site.js"></script>
 </body>
 </html>

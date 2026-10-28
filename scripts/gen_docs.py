@@ -26,26 +26,47 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent / "src"
 # package name -> (mbti file, [source files that make up the package], blurb)
 PACKAGES = [
     ("moonbase", "pkg.generated.mbti",
-     ["moonbase.mbt", "bits.mbt", "error.mbt"],
-     "Generic positional base-N core. base36, base58 and base62 pin an alphabet onto it."),
+     ["moonbase.mbt", "big.mbt", "stream.mbt", "error.mbt"],
+     "The positional base-N core, the error types and the streaming engine. Every other package is a table of digits on top of this one."),
+    ("base2", "base2/pkg.generated.mbti",
+     ["base2/base2.mbt"],
+     "One bit a character — the multibase `0` prefix. Eight characters a byte, so no chunk ever waits and no padding exists."),
+    ("base8", "base8/pkg.generated.mbti",
+     ["base8/base8.mbt"],
+     "Three bits a character, eight characters to three bytes — the multibase `7` prefix, which is a bit packing and not an octal of a number."),
+    ("base10", "base10/pkg.generated.mbti",
+     ["base10/base10.mbt"],
+     "Decimal, the multibase `9` prefix: the bytes read as one big-endian integer, so a leading zero byte is a leading `0`."),
     ("base16", "base16/pkg.generated.mbti",
      ["base16/base16.mbt"],
      "RFC 4648 hexadecimal — byte-oriented, two characters per byte, with a colon form for fingerprints."),
     ("base32", "base32/pkg.generated.mbti",
      ["base32/base32.mbt"],
-     "RFC 4648 base32 (A-Z2-7) and the extended-hex base32hex (0-9A-V), which sorts like the bytes."),
+     "RFC 4648 base32 (A-Z2-7) and the extended-hex base32hex (0-9A-V), plus Crockford's human-oriented alphabet and z-base-32."),
     ("base36", "base36/pkg.generated.mbti",
      ["base36/base36.mbt"],
      "Case-insensitive 0-9a-z over the base-N core, with an integer mode."),
+    ("base45", "base45/pkg.generated.mbti",
+     ["base45/base45.mbt"],
+     "RFC 9285: two bytes in three characters from the 45 that a QR code's alphanumeric mode can hold, with no padding at all."),
     ("base58", "base58/pkg.generated.mbti",
      ["base58/base58.mbt"],
-     "The base58 alphabet over the base-N core. It leaves out 0, O, I and l, so a string survives being read aloud."),
+     "The Bitcoin, Flickr and Ripple alphabets over the base-N core — 0, O, I and l left out so a string survives being read aloud — and base58check."),
     ("base62", "base62/pkg.generated.mbti",
      ["base62/base62.mbt"],
      "URL-safe 0-9A-Za-z over the base-N core, with an integer mode."),
     ("base64", "base64/pkg.generated.mbti",
      ["base64/base64.mbt"],
      "RFC 4648 standard (+/) and URL-safe (-_) base64."),
+    ("base85", "base85/pkg.generated.mbti",
+     ["base85/base85.mbt"],
+     "Adobe's Ascii85, ZeroMQ's Z85 (RFC 32) and the IPv6 spelling of RFC 1924 — four bytes in five characters, three ways."),
+    ("bech32", "bech32/pkg.generated.mbti",
+     ["bech32/bech32.mbt"],
+     "BIP 173's bech32 and BIP 350's bech32m: a human-readable prefix, five-bit groups, and a BCH checksum that the two variants do not share."),
+    ("multibase", "multibase/pkg.generated.mbti",
+     ["multibase/multibase.mbt", "multibase/emoji.mbt"],
+     "Multiformats' self-identifying encodings: a one-character prefix in front of any of the above, from `0` for base2 to a rocket for base256emoji."),
 ]
 
 # Derived trait methods are noise in a reference; they carry no doc-comment
@@ -73,7 +94,7 @@ def parse_source_doc(path: pathlib.Path) -> dict[str, str]:
             buffer = []
         elif s.startswith("///"):
             buffer.append(s[3:].strip())
-        elif s.startswith("pub "):
+        elif s.startswith("pub ") or s.startswith("pub(all) "):
             name = pub_name(s)
             if name is not None and name not in DERIVED_SUFFIXES:
                 docs[name] = " ".join(b for b in buffer if b).strip()

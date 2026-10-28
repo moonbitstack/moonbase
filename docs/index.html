@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>moonbase — base encodings for MoonBit</title>
-<meta name="description" content="base16, base32, base36, base58, base62 and base64 for MoonBit, each with the same five faces.">
+<meta name="description" content="base2 through base85, bech32 and multibase for MoonBit, each with the same five faces.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Slab:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -30,7 +30,7 @@
     <p class="side-title">moonbase</p>
     <ul class="side-nav">
       <li><a href="#overview">Overview</a></li>
-      <li><a href="#encodings">The six encodings</a></li>
+      <li><a href="#encodings">The thirteen encodings</a></li>
       <li><a href="#demo">Live demo</a></li>
       <li><a href="#features">What it gives you</a></li>
       <li><a href="#table">Which one to pick</a></li>
@@ -42,32 +42,39 @@
     <main>
       <section class="hero" id="overview">
         <h1>moonbase</h1>
-        <p class="tagline">Six base encodings for MoonBit — base16, base32, base36, base58, base62 and
-        base64 — with <span class="enc-list">one shape and the same five faces</span>.</p>
+        <p class="tagline">Every base encoding for MoonBit — base2 through base85, bech32 and
+        multibase — with <span class="enc-list">one shape and the same five faces</span>.</p>
         <div class="install">
           <span class="prompt">$</span>
           <code>moon add moonbitstack/moonbase</code>
           <button class="copy" data-copy="moon add moonbitstack/moonbase">copy</button>
         </div>
         <div class="stats">
-          <div class="stat"><div class="n">6</div><div class="c">encodings, one API shape</div></div>
+          <div class="stat"><div class="n">13</div><div class="c">encodings, one API shape</div></div>
           <div class="stat"><div class="n">5</div><div class="c">faces each: encode, decode, bytes, lossy</div></div>
-          <div class="stat"><div class="n">RFC&nbsp;4648</div><div class="c">base16 / 32 / 64 spec</div></div>
+          <div class="stat"><div class="n">RFC&nbsp;4648</div><div class="c">…and 9285, 1924, BIP 173/350</div></div>
           <div class="stat"><div class="n">0</div><div class="c">dependencies between packages</div></div>
         </div>
       </section>
 
       <section id="encodings">
-        <h2>The six encodings</h2>
+        <h2>The thirteen encodings</h2>
         <p>Every package exposes the same five functions in the same order, so reading one is
         reading all of them. Variants are a named argument, not a different function name.</p>
         <div class="cards">
+          <div class="card"><span class="tag">@base2</span><h3>One bit a character</h3><p>Eight characters a byte, no padding, no waiting. The multibase <code>0</code> prefix.</p></div>
+          <div class="card"><span class="tag">@base8</span><h3>Three bits a character</h3><p>Eight characters to three bytes. A bit packing, not an octal of a number — the difference is a leading zero byte.</p></div>
+          <div class="card"><span class="tag">@base10</span><h3>Decimal</h3><p>The bytes as one big-endian integer. The only base whose output a human reads without a legend.</p></div>
           <div class="card"><span class="tag">@base16</span><h3>Hexadecimal</h3><p>Two characters per byte, so leading zeros survive. A colon form writes certificate fingerprints.</p></div>
-          <div class="card"><span class="tag">@base32</span><h3>RFC 4648 base32</h3><p>The A-Z2-7 alphabet, plus a hex kind that sorts like the bytes it encodes.</p></div>
+          <div class="card"><span class="tag">@base32</span><h3>RFC 4648 base32</h3><p>The A-Z2-7 alphabet, a hex kind that sorts like the bytes it encodes, Crockford and z-base-32 for people.</p></div>
           <div class="card"><span class="tag">@base36</span><h3>0–9a–z</h3><p>Case-insensitive, alphanumeric. Short, human-facing ids. Has an integer mode too.</p></div>
-          <div class="card"><span class="tag">@base58</span><h3>No look-alikes</h3><p>The base58 alphabet leaves out 0, O, I and l, so strings survive being read aloud. Leading zero bytes stay as leading 1s.</p></div>
+          <div class="card"><span class="tag">@base45</span><h3>RFC 9285</h3><p>Two bytes in three characters a QR code's alphanumeric mode can hold, so the data fits in a smaller symbol.</p></div>
+          <div class="card"><span class="tag">@base58</span><h3>No look-alikes</h3><p>0, O, I and l are left out so strings survive being read aloud. Bitcoin, Flickr and Ripple alphabets, plus base58check.</p></div>
           <div class="card"><span class="tag">@base62</span><h3>0–9A–Za–z</h3><p>Fully URL-safe. The usual choice for shortened links and opaque public ids.</p></div>
           <div class="card"><span class="tag">@base64</span><h3>RFC 4648 base64</h3><p>Standard +/ and a URL-safe -_ kind for tokens and file names.</p></div>
+          <div class="card"><span class="tag">@base85</span><h3>Four bytes, five characters</h3><p>Adobe's Ascii85, ZeroMQ's Z85 (RFC 32) and the IPv6 spelling of RFC 1924 — three alphabets, one width.</p></div>
+          <div class="card"><span class="tag">@bech32</span><h3>BIP 173, BIP 350</h3><p>A readable prefix, five-bit groups and a BCH checksum that makes a typo visible anywhere — including in the prefix.</p></div>
+          <div class="card"><span class="tag">@multibase</span><h3>Self-identifying</h3><p>One character in front of any of the above, from <code>0</code> for base2 to a rocket for base256emoji.</p></div>
         </div>
       </section>
 
@@ -83,17 +90,19 @@
         </div>
         <div class="callout">
           <span class="tag">Note</span>
-          <p>The demo runs the encoders in JavaScript, ported line-for-line from the MoonBit
-          sources and checked against <code>moon run</code> on every backend. base36, base58 and
-          base62 encode the text's UTF-8 bytes as one big integer; base16, base32 and base64 pack
-          the bits.</p>
+          <p>The demo runs the encoders in JavaScript, ported from the MoonBit sources.
+          <code>scripts/check_docs.py</code> replays the library's own vectors — multibase's
+          <code>tests/*.csv</code> fixtures and every specification example — through that port,
+          so a drift between the demo and the library fails the build. base10, base36, base58 and
+          base62 read the bytes as one big integer; the rest pack bits, except base45 and base85,
+          which group bytes into a number first.</p>
         </div>
       </section>
 
       <section id="features">
         <h2>What it gives you</h2>
         <h3>One shape</h3>
-        <p>All six packages share the five faces: <code>encode</code>, <code>encode_bytes</code>,
+        <p>All thirteen packages share the five faces: <code>encode</code>, <code>encode_bytes</code>,
         <code>decode</code>, <code>decode_bytes</code> and <code>decode_lossy</code>. Import only
         what you use — an app that needs base64 does not link base58's big-integer core.</p>
         <div class="example"><pre><code><span class="cmt">// the ordinary case</span>
@@ -102,6 +111,15 @@
 
 <span class="cmt">// a wire format that already holds bytes — no round trip through String</span>
 @base64.encode_bytes(data[:])</code></pre></div>
+
+        <h3>Streaming</h3>
+        <p>Every bit-packing package has a <code>sink()</code> and a <code>source()</code>. Feed
+        them whatever chunks the transport hands you; the bytes that come out are the bytes one
+        call would have produced.</p>
+        <div class="example"><pre><code>let sink = @base64.sink()
+sink.write(b"moon"[:])
+sink.write(b"base"[:])
+sink.finish()                    <span class="cmt">// "bW9vbmJhc2U="</span></code></pre></div>
 
         <h3>Honest errors</h3>
         <p>A bad input names where it broke, instead of a silent <code>None</code>. The four
@@ -115,6 +133,14 @@
     Checksum(at~)        =&gt; <span class="cmt">// a carried checksum did not match</span>
   }
 } noraise { _ =&gt; println("decoded") }</code></pre></div>
+
+        <h3>Self-identifying strings</h3>
+        <p><code>multibase</code> writes the encoding's name in front of the string;
+        <code>bech32</code> folds the prefix into the checksum. Either way the reader does not
+        have to be told which encoding it was handed.</p>
+        <div class="example"><pre><code>@multibase.encode(data[:], base=Base58Btc)  <span class="cmt">// "zKJfFLz7PRba"</span>
+@multibase.decode("zKJfFLz7PRba")           <span class="cmt">// b"moonbase"</span>
+@bech32.encode("moonbase", data[:])         <span class="cmt">// "moonbase1d4hk7mnzv9ek2s84pra"</span></code></pre></div>
 
         <h3>Custom alphabets</h3>
         <p>The positional core is public, so any base-N system is two lines. <code>Alphabet::new</code>
@@ -131,12 +157,19 @@
         <table>
           <thead><tr><th>Package</th><th>Specification</th><th>Notes</th></tr></thead>
           <tbody>
+            <tr><td><code>@base2</code></td><td>multibase <code>0</code></td><td>One bit a character; eight characters a byte.</td></tr>
+            <tr><td><code>@base8</code></td><td>multibase <code>7</code></td><td>Three bits a character — a bit packing, not an octal of a number.</td></tr>
+            <tr><td><code>@base10</code></td><td>multibase <code>9</code></td><td>Bytes as one decimal integer; a leading zero byte stays a leading <code>0</code>.</td></tr>
             <tr><td><code>@base16</code></td><td>RFC 4648 §8</td><td>Byte-aligned, so leading zeros survive; <code>encode_colons</code> writes fingerprints.</td></tr>
-            <tr><td><code>@base32</code></td><td>§6, §7</td><td><code>kind=Hex</code> keeps byte order under sorting.</td></tr>
+            <tr><td><code>@base32</code></td><td>§6, §7</td><td><code>kind=Hex</code> keeps byte order under sorting; <code>Crockford</code>, <code>Z</code>.</td></tr>
             <tr><td><code>@base36</code></td><td>multibase <code>k</code>/<code>K</code></td><td>Numbers and identifiers.</td></tr>
-            <tr><td><code>@base58</code></td><td>multibase <code>z</code></td><td>No 0, O, I or l; leading zero bytes stay as leading 1.</td></tr>
+            <tr><td><code>@base45</code></td><td>RFC 9285</td><td>QR alphanumeric mode; two bytes in three characters, no padding.</td></tr>
+            <tr><td><code>@base58</code></td><td>multibase <code>z</code></td><td>No 0, O, I or l; <code>Flickr</code>, <code>Ripple</code>, and <code>encode_check</code>.</td></tr>
             <tr><td><code>@base62</code></td><td>—</td><td>Digits, upper, lower; short identifiers.</td></tr>
             <tr><td><code>@base64</code></td><td>§4, §5</td><td><code>kind=Url</code> for tokens and file names; <code>decode_any</code> reads either alphabet.</td></tr>
+            <tr><td><code>@base85</code></td><td>Adobe, RFC 32, RFC 1924</td><td><code>kind=Ascii85</code>, <code>Z85</code>, <code>Ipv6</code> — four bytes in five characters.</td></tr>
+            <tr><td><code>@bech32</code></td><td>BIP 173, BIP 350</td><td><code>kind=Bech32m</code> for witness version 1 and up; the two never overlap.</td></tr>
+            <tr><td><code>@multibase</code></td><td>multiformats</td><td>A one-character prefix in front of any of the above.</td></tr>
           </tbody>
         </table>
         <p>Read the <a href="guide.html">Guide</a> to start encoding, or browse the
@@ -154,13 +187,14 @@
     <p class="toc-title">On this page</p>
     <ul class="toc-nav">
       <li><a href="#overview">Overview</a></li>
-      <li><a href="#encodings">The six encodings</a></li>
+      <li><a href="#encodings">The thirteen encodings</a></li>
       <li><a href="#demo">Live demo</a></li>
       <li><a href="#features">What it gives you</a></li>
       <li><a href="#table">Which one to pick</a></li>
     </ul>
   </aside>
 </div>
+<script src="assets/codecs.js"></script>
 <script src="assets/site.js"></script>
 </body>
 </html>

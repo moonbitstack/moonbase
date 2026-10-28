@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Guide — moonbase</title>
-<meta name="description" content="A progressive guide to moonbase: install, first encode, the five faces, variants, numbers, custom alphabets and honest errors.">
+<meta name="description" content="A progressive guide to moonbase: install, first encode, the five faces, variants, streaming, numbers, custom alphabets and honest errors.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Slab:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -33,7 +33,9 @@
       <li><a href="#first">Your first encode</a></li>
       <li><a href="#faces">The five faces</a></li>
       <li><a href="#variants">Variants</a></li>
+      <li><a href="#stream">Streaming</a></li>
       <li><a href="#numbers">Whole numbers</a></li>
+      <li><a href="#prefixes">Self-identifying strings</a></li>
       <li><a href="#custom">Custom alphabets</a></li>
       <li><a href="#errors">Errors</a></li>
       <li><a href="#lossy">Lossy decode</a></li>
@@ -52,8 +54,12 @@
         <p>Add the package, then import only the encodings you need. An application that uses
         base64 does not link base58's big-integer core.</p>
         <div class="example"><pre><code><span class="cmt">// moon.mod</span>
-{ "deps": { "moonbitstack/moonbase": "0.4.0" } }
+{ "deps": { "moonbitstack/moonbase": "0.5.0" } }
 { "import": ["moonbitstack/moonbase/base64"] }</code></pre></div>
+        <p>Upgrading from 0.4: the machinery the sub-packages share — <code>pack</code>,
+        <code>unpack</code>, <code>lookup_of</code>, <code>text_of</code>, <code>ascii</code> —
+        moved into <code>moonbitstack/moonbase/internal</code>. The encoding API is unchanged; the
+        migration table is in the <a href="https://github.com/moonbitstack/moonbase#upgrading-from-04">README</a>.</p>
       </section>
 
       <section id="first">
@@ -72,8 +78,8 @@ bW9vbmJhc2U</div>
 
       <section id="faces">
         <h2>The five faces</h2>
-        <p>All six packages share the same five functions. They differ only in their alphabet and
-        bit width.</p>
+        <p>All thirteen packages share the same five functions. They differ only in their alphabet,
+        their bit width, and whether they read the payload as bits or as a number.</p>
         <h3>encode / encode_bytes</h3>
         <p>Wire formats — an HTTP header, a gRPC metadata value — hold bytes. <code>encode_bytes</code>
         hands you the ASCII bytes directly, with no <code>String</code> on the way.</p>
@@ -89,17 +95,49 @@ bW9vbmJhc2U</div>
 
       <section id="variants">
         <h2>Variants</h2>
-        <p>Variants are a named argument, not a new function. base16 switches case, base32 and
-        base64 switch alphabet, and base64 can drop padding.</p>
-        <div class="example"><pre><code>let data = b"moonbase"
-@base16.encode(data[:])                 <span class="cmt">// "6d6f6f6e62617365"</span>
-@base16.encode(data[:], kind=Upper)     <span class="cmt">// "6D6F6F4E62617365"</span>
-@base32.encode(data[:], kind=Hex)       <span class="cmt">// "DLNMURJ2C5PMA==="</span>
-@base64.encode(data[:], padding=false)  <span class="cmt">// "bW9vbmJhc2U="</span></code></pre></div>
+        <p>Variants are a named argument, not a new function. base16 switches case, base32 has four
+        alphabets, base58 three, base85 three, and base64 can switch alphabet or drop padding.</p>
+        <div class="example"><pre><code>@base16.encode(data[:])                    <span class="cmt">// "6d6f6f6e62617365"</span>
+@base16.encode(data[:], kind=Upper)        <span class="cmt">// "6D6F6F6E62617365"</span>
+@base32.encode(data[:], kind=Hex)          <span class="cmt">// "DLNMURJ2C5PMA==="</span>
+@base32.encode(data[:], kind=Crockford)    <span class="cmt">// "DNQPYVK2C5SPA"</span>
+@base85.encode(data[:], kind=Z85)          <span class="cmt">// "zeTugvQTs?"</span>
+@base64.encode(data[:], padding=false)     <span class="cmt">// "bW9vbmJhc2U"</span></code></pre></div>
         <div class="output">6d6f6f6e62617365
-6D6F6F4E62617365
+6D6F6F6E62617365
 DLNMURJ2C5PMA===
-bW9vbmJhc2U=</div>
+DNQPYVK2C5SPA
+zeTugvQTs?
+bW9vbmJhc2U</div>
+        <p>The two base32 alphabets that exist for people rather than for machines are
+        <code>Crockford</code> — which leaves out <code>I</code>, <code>L</code>, <code>O</code> and
+        <code>U</code>, and reads those back as the digits they look like — and <code>Z</code>,
+        which puts the letters a word is likely to need at the cheap end.</p>
+      </section>
+
+      <section id="stream">
+        <h2>Streaming</h2>
+        <p>The bit-packing families — base2, base8, base16, base32, base45, base64, base85 — have a
+        <code>sink()</code> and a <code>source()</code>. Feed them whatever chunks the transport
+        hands you; the bytes that come out are the bytes one call would have produced.</p>
+        <div class="example"><pre><code>let sink = @base64.sink()
+sink.write(b"moon"[:])
+sink.write(b"base"[:])
+sink.finish()             <span class="cmt">// "bW9vbmJhc2U="</span>
+
+let source = @base64.source()
+source.write("bW9vbm")    <span class="cmt">// six characters, four bytes and four bits</span>
+source.drain()            <span class="cmt">// b"moon" — the leftover bits stay behind</span>
+source.write("Jhc2U=")
+source.finish()           <span class="cmt">// b"base"</span></code></pre></div>
+        <div class="output">bW9vbmJhc2U=
+b"moon"
+b"base"</div>
+        <p><code>drain</code> hands over what is already decided and keeps the rest; <code>finish</code>
+        flushes the tail. A failure names the index in the whole input, counted across every chunk,
+        so splitting the input never moves an error somewhere the caller cannot find it.</p>
+        <p>The big-integer families — base10, base36, base58, base62 — have no streaming face on
+        purpose: their first digit depends on the last byte.</p>
       </section>
 
       <section id="numbers">
@@ -112,6 +150,44 @@ bW9vbmJhc2U=</div>
         <div class="output">21i3v9
 8M0kX
 123456789</div>
+        <p>Anything larger goes through <code>BigInt</code>, on any alphabet — including the ones
+        whose own packages only speak bytes.</p>
+        <div class="example"><pre><code>let hex = @moonbase.Alphabet::of("0123456789abcdef")
+@moonbase.encode_big(@bigint.BigInt::from_int(123456789), hex)  <span class="cmt">// "75bcd15"</span>
+@moonbase.decode_big("75bcd15", hex)                            <span class="cmt">// 123456789</span></code></pre></div>
+        <div class="output">75bcd15
+123456789</div>
+      </section>
+
+      <section id="prefixes">
+        <h2>Self-identifying strings</h2>
+        <p><code>multibase</code> puts one character in front of any of the encodings above, so the
+        string says how to read itself. <code>detect</code> answers without decoding, and the
+        failure index of a bad body counts from the start of the whole string, prefix included.</p>
+        <div class="example"><pre><code>@multibase.encode(data[:], base=Base58Btc)  <span class="cmt">// "zKJfFLz7PRba"</span>
+@multibase.encode(data[:], base=Base32)     <span class="cmt">// "bnvxw63tcmfzwk"</span>
+@multibase.detect("zKJfFLz7PRba")           <span class="cmt">// Some(Base58Btc)</span>
+@multibase.decode("zKJfFLz7PRba")           <span class="cmt">// b"moonbase"</span></code></pre></div>
+        <div class="output">zKJfFLz7PRba
+bnvxw63tcmfzwk
+Some(Base58Btc)
+b"moonbase"</div>
+        <p><code>bech32</code> is the other way round: the prefix is part of the checksum, so a typo
+        in it is as visible as a typo in the data. The payload is a run of five-bit groups, which
+        is why there are two entry points — <code>encode</code> for a payload that fills whole
+        bytes, and <code>encode_words</code> for one that does not, such as a witness program.</p>
+        <div class="example"><pre><code>@bech32.encode("moonbase", data[:])
+  <span class="cmt">// "moonbase1d4hk7mnzv9ek2s84pra"</span>
+@bech32.encode("moonbase", data[:], kind=Bech32m)
+  <span class="cmt">// "moonbase1d4hk7mnzv9ek29m9dxl"</span>
+@bech32.decode_words("moonbase1d4hk7mnzv9ek2s84pra").hrp
+  <span class="cmt">// "moonbase"</span></code></pre></div>
+        <div class="output">moonbase1d4hk7mnzv9ek2s84pra
+moonbase1d4hk7mnzv9ek29m9dxl
+moonbase</div>
+        <p>The two kinds never overlap: a string valid as <code>Bech32</code> fails as
+        <code>Bech32m</code> and the other way round, which is how a wallet knows it is looking at
+        the address form it supports.</p>
       </section>
 
       <section id="custom">
@@ -164,7 +240,7 @@ print                                           <span class="cmt">// "ab:cd:ef"<
 b"\xab\xcd\xef"
 abcdef</div>
         <p>The same lossy reader swallows the newlines in a PEM body and the spaces in a pasted
-        token. base32 and base64 have it too.</p>
+        token. Every package has it.</p>
       </section>
 
       <footer class="rtd-foot">
@@ -181,13 +257,16 @@ abcdef</div>
       <li><a href="#first">Your first encode</a></li>
       <li><a href="#faces">The five faces</a></li>
       <li><a href="#variants">Variants</a></li>
+      <li><a href="#stream">Streaming</a></li>
       <li><a href="#numbers">Whole numbers</a></li>
+      <li><a href="#prefixes">Self-identifying strings</a></li>
       <li><a href="#custom">Custom alphabets</a></li>
       <li><a href="#errors">Errors</a></li>
       <li><a href="#lossy">Lossy decode</a></li>
     </ul>
   </aside>
 </div>
+<script src="assets/codecs.js"></script>
 <script src="assets/site.js"></script>
 </body>
 </html>

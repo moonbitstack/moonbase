@@ -2,8 +2,9 @@
 
 <h1>moonbase</h1>
 
-<p><strong>Six base encodings for MoonBit.</strong><br>
-base16 &middot; base32 &middot; base36 &middot; base58 &middot; base62 &middot; base64</p>
+<p><strong>Every base encoding for MoonBit, with one shape.</strong><br>
+base2 &middot; base8 &middot; base10 &middot; base16 &middot; base32 &middot; base36 &middot; base45 &middot;
+base58 &middot; base62 &middot; base64 &middot; base85 &middot; bech32 &middot; multibase</p>
 
 <p>
 <a href="https://moonbitstack.github.io/moonbase/"><b>Home</b></a> &nbsp;&middot;&nbsp;
@@ -16,8 +17,8 @@ base16 &middot; base32 &middot; base36 &middot; base58 &middot; base62 &middot; 
 
 ---
 
-Six encodings with one shape. Every package exposes the same five functions in the
-same order, so reading one is reading all of them.
+Thirteen encodings with one shape. Every package exposes the same five functions in
+the same order, so reading one is reading all of them.
 
 ```moonbit
 let data = b"moonbase"
@@ -59,10 +60,39 @@ import {
 Variants are a named argument, not another function name:
 
 ```moonbit
-@base32.encode(data[:], kind=Hex)          // RFC 4648 §7, sort-order preserving
-@base16.encode(data[:], kind=Upper)        // "6D6F6F4E62617365"
-@base64.encode(data[:], padding=false)     // no trailing '='
+@base32.encode(data[:], kind=Hex)          // "DLNMURJ2C5PMA==="
+@base32.encode(data[:], kind=Crockford)    // "DNQPYVK2C5SPA"
+@base16.encode(data[:], kind=Upper)        // "6D6F6F6E62617365"
+@base64.encode(data[:], padding=false)     // "bW9vbmJhc2U"
+@base85.encode(b"\x00\xff\x01\xfe"[:], kind=Z85)   // "0ri90"
 ```
+
+## Streaming
+
+The bit-packing families — base2, base8, base16, base32, base45, base64, base85 —
+have a `sink()` and a `source()`. Feed them in whatever chunks the transport hands
+you; the bytes that come out are the bytes one call would have produced.
+
+```moonbit
+let sink = @base64.sink()
+sink.write(b"moon"[:])
+sink.write(b"base"[:])
+sink.finish()                    // "bW9vbmJhc2U="
+
+let source = @base64.source()
+source.write("bW9vbm")           // six characters are four bytes and four bits
+source.drain()                   // b"moon" — the leftover bits stay behind
+source.write("Jhc2U=")
+source.finish()                  // b"base"
+```
+
+`drain()` hands over what is already decided and keeps the rest; `finish()` flushes
+the tail. A failure names the index in the whole input, counted across every chunk,
+so a split never moves an error to a place the caller cannot find.
+
+The big-integer families — base10, base36, base58, base62 — have no streaming face on
+purpose: their first digit depends on the last byte, so there is nothing to emit until
+the input ends.
 
 ## Whole numbers
 
@@ -73,6 +103,13 @@ zeros have no meaning.
 @base36.encode_int(123456789)   // "21i3v9"
 @base62.encode_int(123456789)   // "8M0kX"
 @base36.decode_int("21i3v9")    // 123456789
+```
+
+Anything larger goes through `BigInt`, on any alphabet:
+
+```moonbit
+@moonbase.encode_big(@bigint.BigInt::from_int(123456789), hex)   // "75bcd15"
+@moonbase.decode_big("75bcd15", hex)                             // the same number
 ```
 
 ## Failures say where
@@ -110,26 +147,82 @@ let crockford = @moonbase.Alphabet::new("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
 character, or fewer than two digits — because it often arrives from configuration.
 `Alphabet::of` is the same thing for literals in your own source, and aborts instead.
 
-## The six encodings
+## Self-identifying strings
+
+`multibase` puts one character in front of any of the above, so the string says how
+to read itself.
+
+```moonbit
+@multibase.encode(data[:], base=Base58Btc)   // "zKJfFLz7PRba"
+@multibase.detect("zKJfFLz7PRba")            // Some(Base58Btc)
+@multibase.decode("zKJfFLz7PRba")            // b"moonbase"
+```
+
+`bech32` is the other way round: it makes the prefix part of the checksum, so a
+typo in the prefix is as visible as a typo anywhere else.
+
+```moonbit
+@bech32.encode("moonbase", data[:])                    // "moonbase1d4hk7mnzv9ek2s84pra"
+@bech32.encode("moonbase", data[:], kind=Bech32m)      // "moonbase1d4hk7mnzv9ek29m9dxl"
+@bech32.decode_words("moonbase1d4hk7mnzv9ek2s84pra")   // { hrp: "moonbase", words: … }
+```
+
+## The thirteen encodings
 
 | Package | Specification | Notes |
 |:--|:--|:--|
+| `base2` | multibase `0` | one bit a character; eight characters a byte |
+| `base8` | multibase `7` | three bits a character — a bit packing, not an octal of a number |
+| `base10` | multibase `9` | the bytes as one decimal integer, so a leading zero byte stays a leading `0` |
 | `base16` | RFC 4648 §8 | byte-aligned, so leading zeros survive; `encode_colons` writes fingerprints |
-| `base32` | RFC 4648 §6, §7 | `kind=Hex` keeps byte order under sorting |
+| `base32` | RFC 4648 §6, §7 | `kind=Hex` keeps byte order under sorting; `Crockford` and `Z` for people |
 | `base36` | multibase `k` / `K` | numbers and identifiers |
-| `base58` | multibase `z` | no `0`, `O`, `I` or `l`; leading zero bytes stay as leading `1` |
+| `base45` | RFC 9285 | two bytes in three characters a QR code's alphanumeric mode can hold; no padding |
+| `base58` | multibase `z` | `Flickr` and `Ripple` alphabets, plus `encode_check` / `decode_check` |
 | `base62` | — | digits, upper, lower; short identifiers |
 | `base64` | RFC 4648 §4, §5 | `kind=Url` for tokens and file names; `decode_any` reads either alphabet |
+| `base85` | Adobe, ZeroMQ RFC 32, RFC 1924 | `kind=Ascii85`, `kind=Z85`, `kind=Ipv6` — four bytes in five characters, three ways |
+| `bech32` | BIP 173, BIP 350 | a human-readable prefix, five-bit groups and a BCH checksum; `kind=Bech32m` for version 1 and up |
+| `multibase` | multiformats | one prefix character, from `0` for base2 to a rocket for base256emoji |
+
+Every package passes its own specification's vectors: RFC 4648 §10, RFC 9285
+Appendix, ZeroMQ RFC 32, RFC 1924 §5, the full BIP 173 and BIP 350 valid/invalid
+lists, and multiformats' `tests/*.csv` fixture files. `scripts/gen_vectors.py`
+regenerates what can be generated and checks the rest against a reference
+implementation.
 
 ## Examples
 
 - [`src/examples/minimal`](src/examples/minimal) — the smallest program that encodes and decodes.
 - [`src/examples/tour`](src/examples/tour) — every face of every package, including a failure.
+- [`src/examples/integration`](src/examples/integration) — one payload in every base, read
+  back without being told which is which; a Bitcoin address; a bech32 address.
 
 ```sh
 moon run src/examples/minimal --target wasm-gc
 moon run src/examples/tour --target wasm-gc
+moon run src/examples/integration --target wasm-gc
 ```
+
+## Upgrading from 0.4
+
+`pack`, `unpack`, `lookup_of`, `text_of` and `ascii` moved from the root package into
+`moonbitstack/moonbase/internal`. They were always machinery for the sub-packages —
+no encoding was ever written with them from outside — and 0.5 puts them where the
+compiler can say so. Nothing else was removed.
+
+| 0.4 | 0.5 |
+|:--|:--|
+| `@moonbase.pack(bytes, bits, digits, pad)` | `@internal.pack(…)` |
+| `@moonbase.unpack(text, bits, table, pad)` | `@internal.unpack(…)` |
+| `@moonbase.lookup_of(text)` | `@internal.lookup_of(text)` |
+| `@moonbase.text_of(bytes)` | `@internal.text_of(bytes)` |
+| `@moonbase.ascii(text)` | `@internal.ascii(text)` |
+
+If you were calling them, the encoding you wanted is one of the packages above; if
+you were extending the library, add `"moonbitstack/moonbase/internal"` to your
+`moon.pkg` and keep going. Everything that was public API — `encode`, `decode`,
+`Alphabet`, `Malformed`, the integer and big-number faces — is unchanged.
 
 ## Licence
 
