@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonbase/internal"
+
+import {
+  "moonbitstack/moonbase",
+}
+
+// Values
+pub fn ascii(String) -> Bytes
+
+pub fn group_of(Int32) -> Int32
+
+pub fn lookup_of(String) -> Array[Int32]
+
+pub fn lookup_of_both(String, String) -> Array[Int32]
+
+pub fn pack(BytesView, Int32, Array[Char], Bool) -> String
+
+pub fn pack_bytes(BytesView, Int32, Array[Char], Bool) -> Bytes
+
+pub fn sha256(BytesView) -> Bytes
+
+pub fn text_of(BytesView) -> String
+
+pub fn unpack(StringView, Int32, Array[Int32], Bool) -> Bytes raise @moonbase.Malformed
+
+pub fn unpack_bytes(BytesView, Int32, Array[Int32], Bool) -> Bytes raise @moonbase.Malformed
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

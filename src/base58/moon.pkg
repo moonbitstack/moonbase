@@ -2,9 +2,14 @@
 //
 // The alphabet leaves out `0`, `O`, `I` and `l` so that a human copying an
 // address cannot turn one into another. Leading zero bytes stay as leading `1`.
+//
+// Flickr and Ripple use the same idea with a different order, and base58check
+// adds the four-byte SHA-256 trailer a Bitcoin address carries.
 
 import {
   "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
+  "moonbitlang/core/bigint",
 }
 
 import {

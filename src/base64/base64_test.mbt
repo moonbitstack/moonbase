@@ -3,7 +3,7 @@
 
 ///|
 fn ascii(s : String) -> Bytes {
-  @moonbase.ascii(s)
+  @internal.ascii(s)
 }
 
 ///|
@@ -118,4 +118,43 @@ test "every byte value survives the round trip" {
   let raw = Bytes::from_array(all)
   assert_eq(@base64.decode(@base64.encode(raw[:])), raw)
   assert_eq(@base64.decode(@base64.encode(raw[:], padding=false)), raw)
+}
+
+///|
+/// Three bytes are four characters, so up to two bytes wait for the next chunk.
+/// Pairing the sink with the source at the same offsets is the property the
+/// interface promises: the answer does not depend on where the chunk boundaries
+/// fell.
+test "the streaming faces agree with the one-shot ones at any split" {
+  let all : Array[Byte] = []
+  for i in 0..<256 {
+    all.push(i.to_byte())
+  }
+  let raw = Bytes::from_array(all)
+  let want = @base64.encode(raw[:])
+  for cut in [0, 1, 2, 3, 4, 5, 129, 255, 256] {
+    let sink = @base64.sink()
+    sink.write(raw[:cut])
+    sink.write(raw[cut:])
+    assert_eq(sink.finish(), want)
+    let source = @base64.source()
+    try source.write(want[:cut]) catch {
+      _ => fail("a split inside valid base64 should never fail")
+    } noraise {
+      _ => ()
+    }
+    let tail = try {
+      source.write(want[cut:])
+      source.finish()
+    } catch {
+      _ => fail("a split inside valid base64 should never fail")
+    } noraise {
+      bytes => bytes
+    }
+    assert_eq(tail, raw)
+  }
+  // The URL alphabet and the padding are properties of the sink too.
+  let url = @base64.sink(kind=Url, padding=false)
+  url.write(b"\xfb\xff"[:])
+  assert_eq(url.finish(), "-_8")
 }

@@ -1,0 +1,15 @@
+// bech32 and bech32m: BIP 173 https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+// and BIP 350 https://github.com/bitcoin/bips/blob/master/bip-0350.mediawiki
+//
+// One character of human-readable prefix, a `1`, then five-bit groups closed by
+// a BCH checksum. The two variants differ in a single constant, and no string is
+// valid under both — which is the whole point of bech32m: an old decoder cannot
+// mistake a version-1 address for a version-0 one.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
+}
+
+import {
+  "moonbitstack/moonbase/base16",
+} for "test"

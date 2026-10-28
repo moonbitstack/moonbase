@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonbase/base85"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitstack/moonbase",
+}
+
+// Values
+pub fn decode(StringView, kind? : Kind) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_bytes(BytesView, kind? : Kind) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView, kind? : Kind) -> Bytes
+
+pub fn encode(BytesView, kind? : Kind) -> String raise @moonbase.Malformed
+
+pub fn encode_bytes(BytesView, kind? : Kind) -> Bytes raise @moonbase.Malformed
+
+pub fn sink(kind? : Kind) -> Sink
+
+pub fn source(kind? : Kind) -> Source
+
+// Errors
+
+// Types and methods
+pub(all) enum Kind {
+  Ascii85
+  Z85
+  Ipv6
+} derive(Eq, @debug.Debug)
+pub fn Kind::equal(Self, Self) -> Bool
+pub fn Kind::not_equal(Self, Self) -> Bool
+pub fn Kind::to_repr(Self) -> @debug.Repr
+
+pub struct Sink {
+  // private fields
+}
+pub fn Sink::drain(Self) -> String
+pub fn Sink::finish(Self) -> String raise @moonbase.Malformed
+pub fn Sink::new(Kind) -> Self
+pub fn Sink::write(Self, BytesView) -> Unit
+
+pub struct Source {
+  // private fields
+}
+pub fn Source::drain(Self) -> Bytes
+pub fn Source::finish(Self) -> Bytes raise @moonbase.Malformed
+pub fn Source::new(Kind) -> Self
+pub fn Source::write(Self, StringView) -> Unit raise @moonbase.Malformed
+
+// Type aliases
+
+// Traits

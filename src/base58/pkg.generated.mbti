@@ -2,29 +2,51 @@
 package "moonbitstack/moonbase/base58"
 
 import {
+  "moonbitlang/core/bigint",
+  "moonbitlang/core/debug",
   "moonbitstack/moonbase",
 }
 
 // Values
 pub let alphabet : @moonbase.Alphabet
 
-pub fn decode(StringView) -> Bytes raise @moonbase.Malformed
+pub let alphabet_flickr : @moonbase.Alphabet
 
-pub fn decode_bytes(BytesView) -> Bytes raise @moonbase.Malformed
+pub let alphabet_ripple : @moonbase.Alphabet
 
-pub fn decode_int(StringView) -> UInt64 raise @moonbase.Malformed
+pub fn decode(StringView, kind? : Kind) -> Bytes raise @moonbase.Malformed
 
-pub fn decode_lossy(StringView) -> Bytes
+pub fn decode_big(StringView, kind? : Kind) -> @bigint.BigInt raise @moonbase.Malformed
 
-pub fn encode(BytesView) -> String
+pub fn decode_bytes(BytesView, kind? : Kind) -> Bytes raise @moonbase.Malformed
 
-pub fn encode_bytes(BytesView) -> Bytes
+pub fn decode_check(StringView, kind? : Kind) -> Bytes raise @moonbase.Malformed
 
-pub fn encode_int(UInt64) -> String
+pub fn decode_int(StringView, kind? : Kind) -> UInt64 raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView, kind? : Kind) -> Bytes
+
+pub fn encode(BytesView, kind? : Kind) -> String
+
+pub fn encode_big(@bigint.BigInt, kind? : Kind) -> String
+
+pub fn encode_bytes(BytesView, kind? : Kind) -> Bytes
+
+pub fn encode_check(BytesView, kind? : Kind) -> String
+
+pub fn encode_int(UInt64, kind? : Kind) -> String
 
 // Errors
 
 // Types and methods
+pub(all) enum Kind {
+  Bitcoin
+  Flickr
+  Ripple
+} derive(Eq, @debug.Debug)
+pub fn Kind::equal(Self, Self) -> Bool
+pub fn Kind::not_equal(Self, Self) -> Bool
+pub fn Kind::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

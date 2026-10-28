@@ -73,7 +73,7 @@ pub fn unpack(
   bits : Int32,
   lookup : Array[Int32],
   lossy : Bool,
-) -> Bytes raise Malformed {
+) -> Bytes raise @moonbase.Malformed {
   let out : Array[Byte] = []
   let mut buffer = 0
   let mut held = 0
@@ -87,14 +87,14 @@ pub fn unpack(
     }
     if padding && !lossy {
       // Padding closes the input: anything after it is a lie about the length.
-      raise Padding(at=i)
+      raise @moonbase.Padding(at=i)
     }
     let value = if code >= 0 && code < 128 { lookup[code] } else { -1 }
     if value < 0 {
       if lossy {
         continue
       }
-      raise Bad(at=i, char=code.unsafe_to_char())
+      raise @moonbase.Bad(at=i, char=code.unsafe_to_char())
     }
     buffer = (buffer << bits) | value
     held = held + bits
@@ -107,7 +107,7 @@ pub fn unpack(
   }
   if taken * bits % 8 >= bits {
     // A whole character is left over that cannot become a byte.
-    raise Truncated(at=input.length())
+    raise @moonbase.Truncated(at=input.length())
   }
   Bytes::from_array(out)
 }
@@ -119,7 +119,7 @@ pub fn unpack_bytes(
   bits : Int32,
   lookup : Array[Int32],
   lossy : Bool,
-) -> Bytes raise Malformed {
+) -> Bytes raise @moonbase.Malformed {
   let out = StringBuilder()
   for i in 0..<input.length() {
     out.write_char(input[i].to_int().unsafe_to_char())
@@ -157,7 +157,7 @@ pub fn lookup_of_both(lower : String, upper : String) -> Array[Int32] {
 
 ///|
 /// How many characters make a whole number of bytes.
-fn group_of(bits : Int32) -> Int32 {
+pub fn group_of(bits : Int32) -> Int32 {
   let mut chars = 1
   while chars * bits % 8 != 0 {
     chars = chars + 1

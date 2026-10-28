@@ -1,0 +1,63 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonbase/multibase"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitstack/moonbase",
+}
+
+// Values
+pub fn decode(StringView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_bytes(BytesView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView) -> Bytes
+
+pub fn detect(StringView) -> Base?
+
+pub fn encode(BytesView, base? : Base) -> String
+
+pub fn encode_bytes(BytesView, base? : Base) -> Bytes
+
+pub fn name(Base) -> String
+
+pub fn of_prefix(Char) -> Base?
+
+pub fn prefix(Base) -> Char
+
+// Errors
+
+// Types and methods
+pub(all) enum Base {
+  Base2
+  Base8
+  Base10
+  Base16
+  Base16Upper
+  Base32Hex
+  Base32HexUpper
+  Base32HexPad
+  Base32HexPadUpper
+  Base32
+  Base32Upper
+  Base32Pad
+  Base32PadUpper
+  Base32Z
+  Base36
+  Base36Upper
+  Base45
+  Base58Btc
+  Base58Flickr
+  Base64
+  Base64Pad
+  Base64Url
+  Base64UrlPad
+  Base256Emoji
+} derive(Eq, @debug.Debug)
+pub fn Base::equal(Self, Self) -> Bool
+pub fn Base::not_equal(Self, Self) -> Bool
+pub fn Base::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

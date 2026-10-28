@@ -22,13 +22,13 @@ pub extend Kind with Debug::{to_repr}
 /// Each byte becomes exactly two characters, so a leading `0x00` stays `"00"`
 /// — unlike a big-integer conversion, which drops leading zeros.
 pub fn encode(input : BytesView, kind~ : Kind = Lower) -> String {
-  @moonbase.pack(input, 4, digits(kind), false)
+  @internal.pack(input, 4, digits(kind), false)
 }
 
 ///|
 /// The same encoding, as the ASCII bytes it would be written with.
 pub fn encode_bytes(input : BytesView, kind~ : Kind = Lower) -> Bytes {
-  @moonbase.pack_bytes(input, 4, digits(kind), false)
+  @internal.pack_bytes(input, 4, digits(kind), false)
 }
 
 ///|
@@ -52,24 +52,38 @@ pub fn encode_colons(input : BytesView, kind~ : Kind = Lower) -> String {
 /// Decode hexadecimal, in either case. Fails at the first character that is not
 /// a hexadecimal digit, or when the length is odd.
 pub fn decode(input : StringView) -> Bytes raise @moonbase.Malformed {
-  @moonbase.unpack(input, 4, lookup, false)
+  @internal.unpack(input, 4, lookup, false)
 }
 
 ///|
 /// Decode from ASCII bytes, for callers who never had a string.
 pub fn decode_bytes(input : BytesView) -> Bytes raise @moonbase.Malformed {
-  @moonbase.unpack_bytes(input, 4, lookup, false)
+  @internal.unpack_bytes(input, 4, lookup, false)
 }
 
 ///|
 /// Decode, skipping anything that is not a hexadecimal digit — colons in a
 /// fingerprint, spaces in a hex dump, newlines in a dump of a key.
 pub fn decode_lossy(input : StringView) -> Bytes {
-  try @moonbase.unpack(input, 4, lookup, true) catch {
+  try @internal.unpack(input, 4, lookup, true) catch {
     _ => b""
   } noraise {
     bytes => bytes
   }
+}
+
+///|
+/// A streaming encoder: one byte is two characters, so no chunk ever has to
+/// wait for the next one.
+pub fn sink(kind~ : Kind = Lower) -> @moonbase.Sink {
+  @moonbase.Sink::new(4, digits(kind), false)
+}
+
+///|
+/// A streaming decoder. The nibble that straddles two chunks is carried, so a
+/// chunk need not end on a byte boundary.
+pub fn source(lossy~ : Bool = false) -> @moonbase.Source {
+  @moonbase.Source::new(4, lookup, lossy)
 }
 
 ///|
@@ -87,6 +101,6 @@ let lower : Array[Char] = "0123456789abcdef".to_array()
 let upper : Array[Char] = "0123456789ABCDEF".to_array()
 
 ///|
-let lookup : Array[Int32] = @moonbase.lookup_of_both(
+let lookup : Array[Int32] = @internal.lookup_of_both(
   "0123456789abcdef", "0123456789ABCDEF",
 )

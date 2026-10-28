@@ -1,1 +1,5 @@
-// moonbase: generic positional base-N encoding. base58 / base62 pin an alphabet.
+// moonbase: the positional base-N core, its error types, and the streaming
+// engine. `pack` / `unpack` and the lookup tables live in `internal`.
+import {
+  "moonbitlang/core/bigint",
+}

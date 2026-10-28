@@ -4,4 +4,5 @@
 // whole reason this is not built on the big-integer core.
 import {
   "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
 }

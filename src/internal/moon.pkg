@@ -1,0 +1,11 @@
+// The shared kernel of the encoding packages, and not part of the public
+// surface: bit packing, the 128-entry lookup tables, and the ASCII conversions.
+//
+// These five used to sit at the root of the module, where they were public by
+// accident of the layout rather than by intent — a caller wanting `pack` had
+// already been served by `encode` and an `Alphabet`. Moving them here keeps the
+// root package to the five faces plus the alphabet type, and lets a child
+// package reach the kernel without the root having to re-export it.
+import {
+  "moonbitstack/moonbase",
+}

@@ -1,0 +1,29 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonbase/base8"
+
+import {
+  "moonbitstack/moonbase",
+}
+
+// Values
+pub fn decode(StringView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_bytes(BytesView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView) -> Bytes
+
+pub fn encode(BytesView) -> String
+
+pub fn encode_bytes(BytesView) -> Bytes
+
+pub fn sink() -> @moonbase.Sink
+
+pub fn source(lossy? : Bool) -> @moonbase.Source
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

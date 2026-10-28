@@ -1,0 +1,9 @@
+// base8, multibase's `7` prefix: https://github.com/multiformats/multibase/blob/master/rfcs/Base8.md
+//
+// Three bits a character, eight characters to three bytes, most significant bit
+// first. The tail is shifted up and zero-filled, exactly as base32 and base64 do
+// it — the difference is only how many bits a character carries.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
+}

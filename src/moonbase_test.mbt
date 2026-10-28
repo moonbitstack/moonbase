@@ -70,18 +70,3 @@ test "the integer faces ignore the leading-zero rule" {
   assert_eq(@moonbase.encode_int(255, a), "ff")
   assert_eq(@moonbase.decode_int("ff", a), 255)
 }
-
-///|
-test "ASCII text and the bytes that spell it convert both ways" {
-  assert_eq(@moonbase.ascii("abc"), b"abc")
-  assert_eq(@moonbase.text_of(b"abc"[:]), "abc")
-}
-
-///|
-test "the packer groups the way each encoding's padding says" {
-  let digits = "01".to_array()
-  assert_eq(@moonbase.pack(b"\xff"[:], 1, digits, false), "11111111")
-  assert_eq(@moonbase.pack(b"\x00"[:], 1, digits, false), "00000000")
-  let table = @moonbase.lookup_of("01")
-  assert_eq(@moonbase.unpack("11111111", 1, table, false), b"\xff")
-}

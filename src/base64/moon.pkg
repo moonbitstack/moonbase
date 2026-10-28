@@ -5,4 +5,5 @@
 // in two characters and in that nobody pads it.
 import {
   "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
 }

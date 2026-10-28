@@ -25,7 +25,7 @@ pub fn encode(
   kind~ : Kind = Std,
   padding~ : Bool = true,
 ) -> String {
-  @moonbase.pack(input, 6, digits(kind), padding)
+  @internal.pack(input, 6, digits(kind), padding)
 }
 
 ///|
@@ -36,7 +36,7 @@ pub fn encode_bytes(
   kind~ : Kind = Std,
   padding~ : Bool = true,
 ) -> Bytes {
-  @moonbase.pack_bytes(input, 6, digits(kind), padding)
+  @internal.pack_bytes(input, 6, digits(kind), padding)
 }
 
 ///|
@@ -46,7 +46,7 @@ pub fn decode(
   input : StringView,
   kind~ : Kind = Std,
 ) -> Bytes raise @moonbase.Malformed {
-  @moonbase.unpack(input, 6, lookup(kind), false)
+  @internal.unpack(input, 6, lookup(kind), false)
 }
 
 ///|
@@ -55,14 +55,14 @@ pub fn decode_bytes(
   input : BytesView,
   kind~ : Kind = Std,
 ) -> Bytes raise @moonbase.Malformed {
-  @moonbase.unpack_bytes(input, 6, lookup(kind), false)
+  @internal.unpack_bytes(input, 6, lookup(kind), false)
 }
 
 ///|
 /// Decode, skipping anything outside the alphabet — the newlines in a PEM body,
 /// the whitespace in a pasted token.
 pub fn decode_lossy(input : StringView, kind~ : Kind = Std) -> Bytes {
-  try @moonbase.unpack(input, 6, lookup(kind), true) catch {
+  try @internal.unpack(input, 6, lookup(kind), true) catch {
     _ => b""
   } noraise {
     bytes => bytes
@@ -73,7 +73,21 @@ pub fn decode_lossy(input : StringView, kind~ : Kind = Std) -> Bytes {
 /// Decode either alphabet at once, for input whose spelling is not known in
 /// advance: `-_` and `+/` are accepted together, since no encoding uses both.
 pub fn decode_any(input : StringView) -> Bytes raise @moonbase.Malformed {
-  @moonbase.unpack(input, 6, any_lookup, false)
+  @internal.unpack(input, 6, any_lookup, false)
+}
+
+///|
+/// A streaming encoder: three bytes are four characters, so up to two bytes
+/// wait for the next chunk and the total is the same at any chunking.
+pub fn sink(kind~ : Kind = Std, padding~ : Bool = true) -> @moonbase.Sink {
+  @moonbase.Sink::new(6, digits(kind), padding)
+}
+
+///|
+/// A streaming decoder. Up to three characters wait for the next chunk; a
+/// failure names the index in the whole input, not in the chunk.
+pub fn source(kind~ : Kind = Std, lossy~ : Bool = false) -> @moonbase.Source {
+  @moonbase.Source::new(6, lookup(kind), lossy)
 }
 
 ///|
@@ -108,10 +122,10 @@ let std_digits : Array[Char] = std_text.to_array()
 let url_digits : Array[Char] = url_text.to_array()
 
 ///|
-let std_lookup : Array[Int32] = @moonbase.lookup_of(std_text)
+let std_lookup : Array[Int32] = @internal.lookup_of(std_text)
 
 ///|
-let url_lookup : Array[Int32] = @moonbase.lookup_of(url_text)
+let url_lookup : Array[Int32] = @internal.lookup_of(url_text)
 
 ///|
-let any_lookup : Array[Int32] = @moonbase.lookup_of_both(std_text, url_text)
+let any_lookup : Array[Int32] = @internal.lookup_of_both(std_text, url_text)

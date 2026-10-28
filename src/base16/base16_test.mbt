@@ -3,7 +3,7 @@
 
 ///|
 fn ascii(s : String) -> Bytes {
-  @moonbase.ascii(s)
+  @internal.ascii(s)
 }
 
 ///|
@@ -93,4 +93,57 @@ test "every byte value survives the round trip" {
   let raw = Bytes::from_array(all)
   assert_eq(@base16.decode(@base16.encode(raw[:])), raw)
   assert_eq(@base16.decode(@base16.encode(raw[:], kind=Upper)), raw)
+}
+
+///|
+/// One byte is two characters, so no chunk ever waits for the next one — but the
+/// decoder's nibble does, which is what makes a split at an odd offset the case
+/// worth testing.
+test "the streaming faces agree with the one-shot ones at any split" {
+  let all : Array[Byte] = []
+  for i in 0..<256 {
+    all.push(i.to_byte())
+  }
+  let raw = Bytes::from_array(all)
+  let want = @base16.encode(raw[:])
+  for cut in [0, 1, 2, 3, 5, 127, 255, 256] {
+    let sink = @base16.sink()
+    sink.write(raw[:cut])
+    sink.write(raw[cut:])
+    assert_eq(sink.finish(), want)
+    let source = @base16.source()
+    try source.write(want[:cut]) catch {
+      _ => fail("a split inside valid hex should never fail")
+    } noraise {
+      _ => ()
+    }
+    let tail = try {
+      source.write(want[cut:])
+      source.finish()
+    } catch {
+      _ => fail("a split inside valid hex should never fail")
+    } noraise {
+      bytes => bytes
+    }
+    assert_eq(tail, raw)
+  }
+}
+
+///|
+test "a streaming failure names the index in the whole input" {
+  let source = @base16.source()
+  try source.write("abcdef") catch {
+    _ => fail("the first chunk is valid")
+  } noraise {
+    _ => ()
+  }
+  try source.write("0123456789abcdeZ") catch {
+    failure => assert_eq(failure, Bad(at=21, char='Z'))
+  } noraise {
+    _ => fail("expected the Z to be named at its own index")
+  }
+  // A source that skips what it cannot read is the lossy face.
+  let lossy = @base16.source(lossy=true)
+  lossy.write("ab:cd ef")
+  assert_eq(lossy.finish(), b"\xab\xcd\xef")
 }

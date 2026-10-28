@@ -19,6 +19,10 @@ pub fn encode(BytesView, kind? : Kind, padding? : Bool) -> String
 
 pub fn encode_bytes(BytesView, kind? : Kind, padding? : Bool) -> Bytes
 
+pub fn sink(kind? : Kind, padding? : Bool) -> @moonbase.Sink
+
+pub fn source(kind? : Kind, lossy? : Bool) -> @moonbase.Source
+
 // Errors
 
 // Types and methods

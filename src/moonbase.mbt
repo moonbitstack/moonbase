@@ -140,7 +140,12 @@ pub fn encode(input : BytesView, alphabet : Alphabet) -> String {
 ///|
 /// The same encoding, as the ASCII bytes it would be written with.
 pub fn encode_bytes(input : BytesView, alphabet : Alphabet) -> Bytes {
-  ascii(encode(input, alphabet))
+  let text = encode(input, alphabet)
+  let out = Array::make(text.length(), b'\x00')
+  for i in 0..<text.length() {
+    out[i] = (text[i].to_int() & 0xff).to_byte()
+  }
+  Bytes::from_array(out)
 }
 
 ///|
@@ -158,7 +163,11 @@ pub fn decode_bytes(
   input : BytesView,
   alphabet : Alphabet,
 ) -> Bytes raise Malformed {
-  read(text_of(input), alphabet)
+  let text = StringBuilder()
+  for i in 0..<input.length() {
+    text.write_char(input[i].to_int().unsafe_to_char())
+  }
+  read(text.to_string(), alphabet)
 }
 
 ///|
@@ -266,24 +275,4 @@ fn read(input : StringView, alphabet : Alphabet) -> Bytes raise Malformed {
     k = k - 1
   }
   Bytes::from_array(bytes)
-}
-
-///|
-/// A string of ASCII, as the bytes it is written with.
-pub fn ascii(text : String) -> Bytes {
-  let out = Array::make(text.length(), b'\x00')
-  for i in 0..<text.length() {
-    out[i] = (text[i].to_int() & 0xff).to_byte()
-  }
-  Bytes::from_array(out)
-}
-
-///|
-/// ASCII bytes, as the string they spell.
-pub fn text_of(input : BytesView) -> String {
-  let out = StringBuilder()
-  for i in 0..<input.length() {
-    out.write_char(input[i].to_int().unsafe_to_char())
-  }
-  out.to_string()
 }

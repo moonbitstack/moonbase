@@ -17,12 +17,18 @@ pub fn encode(BytesView, kind? : Kind, padding? : Bool) -> String
 
 pub fn encode_bytes(BytesView, kind? : Kind, padding? : Bool) -> Bytes
 
+pub fn sink(kind? : Kind, padding? : Bool) -> @moonbase.Sink
+
+pub fn source(kind? : Kind, lossy? : Bool) -> @moonbase.Source
+
 // Errors
 
 // Types and methods
 pub(all) enum Kind {
   Std
   Hex
+  Crockford
+  Z
 } derive(Eq, @debug.Debug)
 pub fn Kind::equal(Self, Self) -> Bool
 pub fn Kind::not_equal(Self, Self) -> Bool

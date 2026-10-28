@@ -1,0 +1,19 @@
+// multibase: https://github.com/multiformats/multibase
+//
+// A one-character prefix in front of an encoding, so that a string says which
+// base it is written in. Nothing here is a new encoding — every case of `encode`
+// is a call into another package and a prefix in front of the answer, which is
+// what makes it the natural place to see the whole family at once.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
+  "moonbitstack/moonbase/base2",
+  "moonbitstack/moonbase/base8",
+  "moonbitstack/moonbase/base10",
+  "moonbitstack/moonbase/base16",
+  "moonbitstack/moonbase/base32",
+  "moonbitstack/moonbase/base36",
+  "moonbitstack/moonbase/base45",
+  "moonbitstack/moonbase/base58",
+  "moonbitstack/moonbase/base64",
+}

@@ -1,0 +1,10 @@
+// base45, RFC 9285: https://www.rfc-editor.org/rfc/rfc9285
+//
+// Two bytes in forty-five, three characters out — the shape a QR code wants,
+// because its alphanumeric mode packs two characters into eleven bits. Not a
+// bit packing: 65536 is not a power of 45, so the encoder divides rather than
+// slices, and there is no padding at all.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
+}

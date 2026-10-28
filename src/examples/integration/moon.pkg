@@ -1,0 +1,11 @@
+// The integration example: multibase, and the encodings it is made of.
+//
+// One payload, written a dozen ways, each string saying which way it is written.
+import {
+  "moonbitstack/moonbase/base16",
+  "moonbitstack/moonbase/base58",
+  "moonbitstack/moonbase/bech32",
+  "moonbitstack/moonbase/multibase",
+}
+
+pkgtype(kind: "executable")

@@ -4,6 +4,12 @@
 // Five bits a character, padded to eight characters a group. The extended-hex
 // alphabet keeps byte order, which is why a sorted list of encodings is a
 // sorted list of payloads.
+//
+// Crockford's base32 (https://www.crockford.com/base32.html) and z-base-32
+// (https://philzimmermann.com/docs/human-oriented-base-32-encoding.txt) are the
+// same five bits for a different reader: one drops the letters a human confuses
+// with digits, the other orders its alphabet by how often a letter is used.
 import {
   "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
 }

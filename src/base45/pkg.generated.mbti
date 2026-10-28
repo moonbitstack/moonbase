@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonbase/base45"
+
+import {
+  "moonbitstack/moonbase",
+}
+
+// Values
+pub fn decode(StringView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_bytes(BytesView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView) -> Bytes
+
+pub fn encode(BytesView) -> String
+
+pub fn encode_bytes(BytesView) -> Bytes
+
+pub fn sink() -> Sink
+
+pub fn source() -> Source
+
+// Errors
+
+// Types and methods
+pub struct Sink {
+  // private fields
+}
+pub fn Sink::drain(Self) -> String
+pub fn Sink::finish(Self) -> String
+pub fn Sink::new() -> Self
+pub fn Sink::write(Self, BytesView) -> Unit
+
+pub struct Source {
+  // private fields
+}
+pub fn Source::drain(Self) -> Bytes
+pub fn Source::finish(Self) -> Bytes raise @moonbase.Malformed
+pub fn Source::new() -> Self
+pub fn Source::write(Self, StringView) -> Unit raise @moonbase.Malformed
+
+// Type aliases
+
+// Traits

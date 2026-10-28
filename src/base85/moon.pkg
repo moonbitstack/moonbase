@@ -1,0 +1,14 @@
+// base85 in three flavours: Adobe's Ascii85, ZeroMQ's Z85 (RFC 32), and the
+// IPv6 spelling of RFC 1924.
+//
+// Four bytes become five characters — 85^5 is just over 2^32, which is the
+// whole trick. Ascii85 writes a zero group as `z` and allows a short final
+// group; Z85 forbids both; RFC 1924 reads the whole address as one number.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
+}
+
+import {
+  "moonbitstack/moonbase/base16",
+} for "test"

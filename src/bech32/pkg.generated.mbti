@@ -1,0 +1,54 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "moonbitstack/moonbase/bech32"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitstack/moonbase",
+}
+
+// Values
+pub fn bytes_of(BytesView) -> Bytes raise @moonbase.Malformed
+
+pub fn decode(StringView, kind? : Kind) -> Decoded raise @moonbase.Malformed
+
+pub fn decode_bytes(BytesView, kind? : Kind) -> Decoded raise @moonbase.Malformed
+
+pub fn decode_lossy(StringView, kind? : Kind) -> Decoded?
+
+pub fn decode_words(StringView, kind? : Kind) -> Words raise @moonbase.Malformed
+
+pub fn encode(StringView, BytesView, kind? : Kind) -> String raise @moonbase.Malformed
+
+pub fn encode_bytes(StringView, BytesView, kind? : Kind) -> Bytes raise @moonbase.Malformed
+
+pub fn encode_words(StringView, BytesView, kind? : Kind) -> String raise @moonbase.Malformed
+
+pub fn words_of(BytesView) -> Bytes
+
+// Errors
+
+// Types and methods
+pub(all) struct Decoded {
+  hrp : String
+  data : Bytes
+} derive(Eq, @debug.Debug)
+pub fn Decoded::equal(Self, Self) -> Bool
+pub fn Decoded::not_equal(Self, Self) -> Bool
+pub fn Decoded::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Kind {
+  Bech32
+  Bech32m
+} derive(Eq, @debug.Debug)
+pub fn Kind::equal(Self, Self) -> Bool
+pub fn Kind::not_equal(Self, Self) -> Bool
+pub fn Kind::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Words {
+  hrp : String
+  words : Bytes
+}
+
+// Type aliases
+
+// Traits

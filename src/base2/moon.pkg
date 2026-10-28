@@ -1,0 +1,9 @@
+// base2, multibase's `0` prefix: https://github.com/multiformats/multibase/blob/master/rfcs/Base2.md
+//
+// One bit a character, eight characters a byte, most significant bit first. It
+// is the only encoding here with no padding and no variants: eight divides eight,
+// so a byte always ends on a character boundary.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/internal",
+}

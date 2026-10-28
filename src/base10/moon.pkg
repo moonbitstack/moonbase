@@ -1,0 +1,13 @@
+// base10, multibase's `9` prefix: https://github.com/multiformats/multibase/blob/master/rfcs/Base10.md
+//
+// Decimal over the positional core: the bytes are one big-endian integer and the
+// output is that integer in base ten. Not a packing — a leading zero byte is a
+// leading `0`, and nothing lines up on a character boundary.
+import {
+  "moonbitstack/moonbase",
+  "moonbitlang/core/bigint",
+}
+
+import {
+  "moonbitstack/moonbase/internal",
+} for "test"

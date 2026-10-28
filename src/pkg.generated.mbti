@@ -2,13 +2,14 @@
 package "moonbitstack/moonbase"
 
 import {
+  "moonbitlang/core/bigint",
   "moonbitlang/core/debug",
 }
 
 // Values
-pub fn ascii(String) -> Bytes
-
 pub fn decode(StringView, Alphabet) -> Bytes raise Malformed
+
+pub fn decode_big(StringView, Alphabet) -> @bigint.BigInt raise Malformed
 
 pub fn decode_bytes(BytesView, Alphabet) -> Bytes raise Malformed
 
@@ -18,23 +19,11 @@ pub fn decode_lossy(StringView, Alphabet) -> Bytes
 
 pub fn encode(BytesView, Alphabet) -> String
 
+pub fn encode_big(@bigint.BigInt, Alphabet) -> String
+
 pub fn encode_bytes(BytesView, Alphabet) -> Bytes
 
 pub fn encode_int(UInt64, Alphabet) -> String
-
-pub fn lookup_of(String) -> Array[Int32]
-
-pub fn lookup_of_both(String, String) -> Array[Int32]
-
-pub fn pack(BytesView, Int32, Array[Char], Bool) -> String
-
-pub fn pack_bytes(BytesView, Int32, Array[Char], Bool) -> Bytes
-
-pub fn text_of(BytesView) -> String
-
-pub fn unpack(StringView, Int32, Array[Int32], Bool) -> Bytes raise Malformed
-
-pub fn unpack_bytes(BytesView, Int32, Array[Int32], Bool) -> Bytes raise Malformed
 
 // Errors
 pub(all) suberror BadAlphabet {
@@ -67,6 +56,22 @@ pub fn Alphabet::char_of(Self, Int32) -> Char
 pub fn Alphabet::new(String) -> Self raise BadAlphabet
 pub fn Alphabet::of(String) -> Self
 pub fn Alphabet::value_of(Self, Char) -> Int32?
+
+pub struct Sink {
+  // private fields
+}
+pub fn Sink::drain(Self) -> String
+pub fn Sink::finish(Self) -> String
+pub fn Sink::new(Int32, Array[Char], Bool) -> Self
+pub fn Sink::write(Self, BytesView) -> Unit
+
+pub struct Source {
+  // private fields
+}
+pub fn Source::drain(Self) -> Bytes
+pub fn Source::finish(Self) -> Bytes raise Malformed
+pub fn Source::new(Int32, Array[Int32], Bool) -> Self
+pub fn Source::write(Self, StringView) -> Unit raise Malformed
 
 // Type aliases
 
