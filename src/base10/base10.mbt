@@ -1,6 +1,12 @@
 // Copyright 2026 Leo Cheng
 // SPDX-License-Identifier: Apache-2.0
 
+// No Sink or Source here, on purpose: the payload is read as one big-endian
+// integer, so the first digit of the answer depends on the last byte of the
+// input and nothing could be emitted before the whole payload had arrived.
+// `encode_big` / `decode_big` take a value whole; the reasoning is in
+// `stream.mbt`.
+
 ///|
 /// The alphabet this encoding pins: the ten digits, in order.
 pub let alphabet : @moonbase.Alphabet = @moonbase.Alphabet::of("0123456789")

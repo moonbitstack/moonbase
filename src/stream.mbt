@@ -18,10 +18,17 @@
 /// sink.finish()               // "Zm9vYmFy"
 /// ```
 ///
-/// This is the bit-packing engine, so it serves base16, base32 and base64. The
-/// positional encodings (base36, base58, base62, base10) have no streaming face
-/// at all: their first digit depends on the last byte, so nothing can be
-/// written until everything has been read.
+/// This is the bit-packing engine, so it serves base2, base8, base16, base32,
+/// base45, base64 and base85, each of which decides its next character from the
+/// next few bits.
+///
+/// The positional encodings (base10, base36, base58, base62) have no streaming
+/// face at all, and that is a decision rather than an omission: they read the
+/// payload as one big-endian integer, so the first digit of the answer depends
+/// on the last byte of the input. Nothing could be emitted before the whole
+/// payload had arrived, which is what [`encode`](#encode) already waits for. A
+/// face that only ever emitted at `finish` would add a name, not a capability,
+/// so those four take a whole value through `encode_big` / `decode_big`.
 pub struct Sink {
   priv digits : Array[Char]
   priv bits : Int32

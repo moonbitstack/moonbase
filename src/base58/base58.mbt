@@ -1,6 +1,13 @@
 // Copyright 2026 Leo Cheng
 // SPDX-License-Identifier: Apache-2.0
 
+// No Sink or Source here, on purpose: the payload is read as one big-endian
+// integer, so the first digit of the answer depends on the last byte of the
+// input and nothing could be emitted before the whole payload had arrived.
+// `encode_big` / `decode_big` take a value whole; the reasoning is in
+// `stream.mbt`. base58check is one hash of the whole payload, so it cannot be
+// fed in pieces either.
+
 ///|
 /// Which of the three base58 alphabets is in use.
 ///
