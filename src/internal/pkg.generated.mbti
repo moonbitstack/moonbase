@@ -22,9 +22,9 @@ pub fn sha256(BytesView) -> Bytes
 
 pub fn text_of(BytesView) -> String
 
-pub fn unpack(StringView, Int32, Array[Int32], Bool) -> Bytes raise @moonbase.Malformed
+pub fn unpack(StringView, Int32, Array[Int32], Bool, padding? : Bool, strict? : Bool) -> Bytes raise @moonbase.Malformed
 
-pub fn unpack_bytes(BytesView, Int32, Array[Int32], Bool) -> Bytes raise @moonbase.Malformed
+pub fn unpack_bytes(BytesView, Int32, Array[Int32], Bool, padding? : Bool, strict? : Bool) -> Bytes raise @moonbase.Malformed
 
 // Errors
 

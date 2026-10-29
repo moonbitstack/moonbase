@@ -7,11 +7,11 @@ import {
 }
 
 // Values
-pub fn decode(StringView, kind? : Kind) -> Bytes raise @moonbase.Malformed
+pub fn decode(StringView, kind? : Kind, padding? : Bool, strict? : Bool) -> Bytes raise @moonbase.Malformed
 
 pub fn decode_any(StringView) -> Bytes raise @moonbase.Malformed
 
-pub fn decode_bytes(BytesView, kind? : Kind) -> Bytes raise @moonbase.Malformed
+pub fn decode_bytes(BytesView, kind? : Kind, padding? : Bool, strict? : Bool) -> Bytes raise @moonbase.Malformed
 
 pub fn decode_lossy(StringView, kind? : Kind) -> Bytes
 

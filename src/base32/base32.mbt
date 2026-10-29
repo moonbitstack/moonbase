@@ -48,11 +48,19 @@ pub fn encode_bytes(
 /// Both cases are accepted whatever `kind` says, and `kind=Crockford` also
 /// accepts the letters its specification aliases: `O` reads as zero, `I` and `L`
 /// as one.
+///
+/// `padding` says whether trailing `=` must be there (`true`) or must not
+/// (`false`); left out, either is read. `strict` refuses what the default
+/// tolerates: an incomplete run of `=`, and spare bits after the last byte that
+/// are not zero (RFC 4648 §3.5). Together they accept exactly the one spelling
+/// `encode` writes, which is what a format that compares or signs the text needs.
 pub fn decode(
   input : StringView,
   kind~ : Kind = Std,
+  padding? : Bool,
+  strict~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack(input, 5, lookup(kind), false)
+  @internal.unpack(input, 5, lookup(kind), false, padding?, strict~)
 }
 
 ///|
@@ -60,8 +68,10 @@ pub fn decode(
 pub fn decode_bytes(
   input : BytesView,
   kind~ : Kind = Std,
+  padding? : Bool,
+  strict~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack_bytes(input, 5, lookup(kind), false)
+  @internal.unpack_bytes(input, 5, lookup(kind), false, padding?, strict~)
 }
 
 ///|

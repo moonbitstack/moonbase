@@ -158,3 +158,55 @@ test "the streaming faces agree with the one-shot ones at any split" {
   url.write(b"\xfb\xff"[:])
   assert_eq(url.finish(), "-_8")
 }
+
+///|
+/// Go's `StdEncoding`, `RawStdEncoding` and their `Strict()` forms, input by
+/// input: `padding` given matches Go's choice of encoding, `strict` its mode.
+test "padding and strict agree with Go" {
+  for row in strict_vectors {
+    let (input, padding, strict, want) = row
+    let got : Bytes? = try @base64.decode(input, padding~, strict~) catch {
+      _ => None
+    } noraise {
+      bytes => Some(bytes)
+    }
+    if got != want {
+      fail("\{input} padding=\{padding} strict=\{strict}")
+    }
+  }
+}
+
+///|
+test "padding left out reads either spelling" {
+  assert_eq(@base64.decode("Zg=="), b"f")
+  assert_eq(@base64.decode("Zg"), b"f")
+  assert_eq(@base64.decode("Zh"), b"f")
+  assert_eq(@base64.decode("Zg=", strict=false), b"f")
+}
+
+///|
+test "strict alone keeps padding optional but complete and bits zero" {
+  assert_eq(@base64.decode("Zg==", strict=true), b"f")
+  assert_eq(@base64.decode("Zg", strict=true), b"f")
+  let errors = ["Zg=", "Zh", "Zh==", "Zm9="].map(fn(s) {
+    try @base64.decode(s, strict=true) catch {
+      @moonbase.Padding(at~) => at
+      _ => -2
+    } noraise {
+      _ => -1
+    }
+  })
+  assert_eq(errors, [2, 1, 1, 2])
+}
+
+///|
+test "the bytes form takes the same two knobs" {
+  assert_eq(@base64.decode_bytes(b"Zg==", padding=true, strict=true), b"f")
+  let refused = try @base64.decode_bytes(b"Zg", padding=true) catch {
+    @moonbase.Padding(at~) => at == 2
+    _ => false
+  } noraise {
+    _ => false
+  }
+  assert_true(refused)
+}

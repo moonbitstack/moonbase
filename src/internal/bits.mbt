@@ -67,25 +67,33 @@ pub fn pack_bytes(
 /// Unpack characters back into bytes.
 ///
 /// `lossy` decides what an unknown character means: skipped, which is what a
-/// PEM body full of newlines needs, or an error naming where it was.
+/// PEM body full of newlines needs, or an error naming where it was. `padding`
+/// and `strict` are the decoders' own, and do nothing when `lossy` is set.
 pub fn unpack(
   input : StringView,
   bits : Int32,
   lookup : Array[Int32],
   lossy : Bool,
+  padding? : Bool,
+  strict~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
   let out : Array[Byte] = []
   let mut buffer = 0
   let mut held = 0
   let mut taken = 0
-  let mut padding = false
+  let mut pads = 0
+  let mut first_pad = -1
+  let mut last = -1
   for i in 0..<input.length() {
     let code = input[i].to_int()
     if code == 61 {
-      padding = true
+      if first_pad < 0 {
+        first_pad = i
+      }
+      pads = pads + 1
       continue
     }
-    if padding && !lossy {
+    if first_pad >= 0 && !lossy {
       // Padding closes the input: anything after it is a lie about the length.
       raise @moonbase.Padding(at=i)
     }
@@ -99,6 +107,7 @@ pub fn unpack(
     buffer = (buffer << bits) | value
     held = held + bits
     taken = taken + 1
+    last = i
     while held >= 8 {
       held = held - 8
       out.push(((buffer >> held) & 0xff).to_byte())
@@ -108,6 +117,28 @@ pub fn unpack(
   if taken * bits % 8 >= bits {
     // A whole character is left over that cannot become a byte.
     raise @moonbase.Truncated(at=input.length())
+  }
+  if lossy {
+    return Bytes::from_array(out)
+  }
+  let group = group_of(bits)
+  let want = (group - taken % group) % group
+  match padding {
+    Some(true) if pads < want => raise @moonbase.Padding(at=input.length())
+    Some(true) if pads > want => raise @moonbase.Padding(at=first_pad + want)
+    Some(false) if pads > 0 => raise @moonbase.Padding(at=first_pad)
+    _ => ()
+  }
+  if strict {
+    if pads > 0 && pads != want {
+      raise @moonbase.Padding(at=first_pad)
+    }
+    // RFC 4648 §3.5: the bits left over after the last whole byte are zero, so
+    // that each byte string has one spelling and two spellings never compare
+    // equal by accident.
+    if buffer != 0 {
+      raise @moonbase.Padding(at=last)
+    }
   }
   Bytes::from_array(out)
 }
@@ -119,12 +150,14 @@ pub fn unpack_bytes(
   bits : Int32,
   lookup : Array[Int32],
   lossy : Bool,
+  padding? : Bool,
+  strict~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
   let out = StringBuilder()
   for i in 0..<input.length() {
     out.write_char(input[i].to_int().unsafe_to_char())
   }
-  unpack(out.to_string(), bits, lookup, lossy)
+  unpack(out.to_string(), bits, lookup, lossy, padding?, strict~)
 }
 
 ///|

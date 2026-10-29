@@ -39,6 +39,7 @@
       <li><a href="#custom">Custom alphabets</a></li>
       <li><a href="#errors">Errors</a></li>
       <li><a href="#lossy">Lossy decode</a></li>
+      <li><a href="#strict">Strict decode</a></li>
     </ul>
     <a class="side-github" href="https://github.com/moonbitstack/moonbase">View source on GitHub</a>
   </aside>
@@ -245,6 +246,20 @@ abcdef</div>
         token. Every package has it.</p>
       </section>
 
+      <section id="strict">
+        <h2>Strict decode</h2>
+        <p>The default decoder reads <code>Zg==</code>, <code>Zg</code> and <code>Zh</code> as the
+        same byte. A format that signs or compares the text needs one spelling per value, and base32
+        and base64 take two arguments for it: <code>padding</code> requires (<code>true</code>) or
+        forbids (<code>false</code>) the trailing <code>=</code>, and <code>strict</code> refuses an
+        incomplete run of <code>=</code> and spare bits that are not zero (RFC 4648 §3.5).</p>
+        <div class="example"><pre><code>@base64.decode("Zg==", padding=true, strict=true)   <span class="cmt">// b"f"</span>
+@base64.decode("Zh", padding=false, strict=true)    <span class="cmt">// Padding(at=1)</span>
+@base64.decode("Zg=", strict=true)                  <span class="cmt">// Padding(at=2)</span></code></pre></div>
+        <p>The four combinations of the two match Go's <code>StdEncoding</code>,
+        <code>RawStdEncoding</code> and their <code>Strict()</code> forms, input for input.</p>
+      </section>
+
       <footer class="rtd-foot">
         moonbase &middot; Apache-2.0 &middot;
         <a href="https://github.com/moonbitstack/moonbase">GitHub</a> &middot;
@@ -265,6 +280,7 @@ abcdef</div>
       <li><a href="#custom">Custom alphabets</a></li>
       <li><a href="#errors">Errors</a></li>
       <li><a href="#lossy">Lossy decode</a></li>
+      <li><a href="#strict">Strict decode</a></li>
     </ul>
   </aside>
 </div>

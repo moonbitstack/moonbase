@@ -217,3 +217,54 @@ test "the streaming faces agree with the one-shot ones at any split" {
     }
   }
 }
+
+///|
+/// Go's `StdEncoding` and `NoPadding` for each input. Go has no strict base32,
+/// so the spare bits are checked by hand below.
+test "padding agrees with Go" {
+  for row in strict_vectors {
+    let (input, padding, strict, want) = row
+    let got : Bytes? = try @base32.decode(input, padding~, strict~) catch {
+      _ => None
+    } noraise {
+      bytes => Some(bytes)
+    }
+    if got != want {
+      fail("\{input} padding=\{padding}")
+    }
+  }
+}
+
+///|
+test "strict refuses spare bits that are not zero" {
+  assert_eq(@base32.decode("MY======", strict=true), b"f")
+  assert_eq(@base32.decode("MZ======"), b"f")
+  let at = try @base32.decode("MZ======", strict=true) catch {
+    @moonbase.Padding(at~) => at
+    _ => -2
+  } noraise {
+    _ => -1
+  }
+  assert_eq(at, 1)
+}
+
+///|
+/// Go reads a full group followed by one more `=`, and an unpadded lone
+/// character as no bytes at all; RFC 4648 and Python's `b32decode` allow
+/// neither, and neither does this.
+test "the inputs Go reads and RFC 4648 does not are refused" {
+  let lone = try @base32.decode("M", padding=false) catch {
+    @moonbase.Truncated(at~) => at
+    _ => -2
+  } noraise {
+    _ => -1
+  }
+  assert_eq(lone, 1)
+  let at = try @base32.decode("MY=======", padding=true) catch {
+    @moonbase.Padding(at~) => at
+    _ => -2
+  } noraise {
+    _ => -1
+  }
+  assert_eq(at, 8)
+}

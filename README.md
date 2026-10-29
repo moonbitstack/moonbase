@@ -67,6 +67,14 @@ Variants are a named argument, not another function name:
 @base85.encode(b"\x00\xff\x01\xfe"[:], kind=Z85)   // "0ri90"
 ```
 
+Decoding reads either padding by default. base32 and base64 take `padding` to require or forbid the `=`, and `strict` to refuse an incomplete run of `=` and spare bits that are not zero, so a format that compares or signs the text accepts only the spelling `encode` writes:
+
+```moonbit
+@base64.decode("Zg==", padding=true, strict=true)   // b"f"
+@base64.decode("Zh==", strict=true)                 // raises Padding(at=1)
+@base64.decode("Zg==", padding=false)               // raises Padding(at=2)
+```
+
 ## Streaming
 
 The bit-packing families — base2, base8, base16, base32, base45, base64, base85 —
