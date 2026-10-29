@@ -264,7 +264,8 @@ def shell(title: str, main_html: str) -> str:
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Slab:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
-</head>
+
+<script type="module" src="assets/scrollbar.js"></script></head>
 <body>
 <a class="skip-link" href="#content">Skip to content</a>
 <header class="rtd-top">
