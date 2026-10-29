@@ -1,0 +1,28 @@
+// The site's engine: moonbase built to JavaScript for the playground and the
+// showcase. Strings in, JSON out.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/base2",
+  "moonbitstack/moonbase/base8",
+  "moonbitstack/moonbase/base10",
+  "moonbitstack/moonbase/base16",
+  "moonbitstack/moonbase/base32",
+  "moonbitstack/moonbase/base36",
+  "moonbitstack/moonbase/base45",
+  "moonbitstack/moonbase/base58",
+  "moonbitstack/moonbase/base62",
+  "moonbitstack/moonbase/base64",
+  "moonbitstack/moonbase/base85",
+  "moonbitstack/moonbase/bech32",
+  "moonbitstack/moonbase/multibase",
+  "moonbitlang/core/encoding/utf8",
+}
+
+options(
+  link: {
+    "js": {
+      "exports": [ "rows", "show", "bech32", "alphabets" ],
+      "format": "esm",
+    },
+  },
+)

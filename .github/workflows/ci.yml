@@ -58,10 +58,6 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 scripts/gen_vectors.py check
 
-      - name: documentation vectors reproduce (the site's encoders)
-        if: runner.os == 'Linux'
-        run: python3 scripts/check_docs.py
-
       - name: api reference is up to date
         if: runner.os == 'Linux'
         run: |

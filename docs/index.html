@@ -90,10 +90,8 @@
         </div>
         <div class="callout">
           <span class="tag">Note</span>
-          <p>The demo runs the encoders in JavaScript, ported from the MoonBit sources.
-          <code>scripts/check_docs.py</code> replays the library's own vectors —
-          <code>scripts/vectors/multibase/*.csv</code> and every specification example — through
-          that port, so a drift between the demo and the library fails the build. base10, base36,
+          <p>The demo runs moonbase itself, built to JavaScript, so every row is what the
+          library writes. base10, base36,
           base58 and base62 read the bytes as one big integer; base2, base8, base16, base32 and
           base64 pack bits; base45 and base85 turn a group of bytes into a number first;
           base256emoji is a 256-entry table; bech32 packs five bits and appends a BCH checksum,
@@ -197,7 +195,7 @@ sink.finish()                    <span class="cmt">// "bW9vbmJhc2U="</span></cod
     </ul>
   </aside>
 </div>
-<script src="assets/codecs.js"></script>
+<script src="assets/engine.js"></script>
 <script src="assets/site.js"></script>
 </body>
 </html>

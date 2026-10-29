@@ -43,10 +43,14 @@ jobs:
           python3 scripts/gen_docs.py
           git diff --exit-code docs/api.html
 
-      - name: the site's encoders still agree with the library
+      - name: the vectors still come out of the reference encoders
+        run: python3 scripts/gen_vectors.py check
+
+      - name: build the engine the pages encode with
         run: |
-          python3 scripts/gen_vectors.py check
-          python3 scripts/check_docs.py
+          moon build --target js --release src/examples/browser
+          mkdir -p docs/engine
+          cp _build/js/release/build/examples/browser/browser.js docs/engine/moonbase.js
 
 
       - name: configure pages

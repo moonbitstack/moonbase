@@ -408,16 +408,21 @@ tbody tr:nth-child(even) { background: var(--panel); }
   border: 1px solid var(--line); border-radius: 9px; padding: .7rem .9rem; outline: none;
 }
 .pg input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent); }
-.pg-rows { margin-top: 1rem; display: grid; gap: .4rem; }
+/* the rows share one grid, so every label column is as wide as the longest
+   label and the values start on one line */
+.pg-rows {
+  margin-top: 1rem; display: grid; gap: .4rem .7rem;
+  grid-template-columns: max-content minmax(0, 1fr) auto;
+}
 .pg-row {
-  display: grid; grid-template-columns: 112px 1fr auto; align-items: center; gap: .7rem;
-  padding: .35rem .55rem; border-radius: 8px;
+  display: grid; grid-column: 1 / -1; grid-template-columns: subgrid;
+  align-items: center; padding: .35rem .55rem; border-radius: 8px;
 }
 .pg-row:hover { background: var(--code-bg); }
 .pg-row .lbl { font-family: "Roboto Mono", monospace; font-size: .78rem; color: var(--accent); font-weight: 600; white-space: nowrap; }
 .pg-row .val {
   font-family: "Roboto Mono", monospace; font-size: .9rem; color: var(--out);
-  overflow-x: auto; white-space: nowrap; scrollbar-width: thin; min-width: 0;
+  overflow-x: auto; white-space: nowrap; min-width: 0;
 }
 .pg-row .copy { font-size: .68rem; }
 
@@ -486,7 +491,8 @@ tbody tr:nth-child(even) { background: var(--panel); }
 
 @media (width <= 860px) {
   .rtd-wrap { grid-template-columns: minmax(0, 1fr); }
-  .pg-row { grid-template-columns: 92px minmax(0, 1fr) auto; }
+  .pg-rows { grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr) auto; }
+  .pg-row .lbl { white-space: normal; }
   .cards { grid-template-columns: minmax(0, 1fr); }
   .rtd-side {
     position: static; height: auto; border-right: none;
@@ -500,7 +506,17 @@ tbody tr:nth-child(even) { background: var(--panel); }
   .hero h1 { font-size: 2.1rem; }
   .pg-row .lbl { font-size: .72rem; }
   main > h1 { font-size: 1.7rem; }
-  .top-nav a:not(.active):not(.github) { display: none; }
+  .top-nav { gap: 0; }
+  .top-nav a { padding: 0 .4rem; font-size: .82rem; }
+}
+
+@media (width <= 480px) {
+  .rtd-top { flex-wrap: wrap; height: auto; padding: .45rem .9rem; row-gap: .25rem; }
+  .top-nav { margin-left: 0; width: 100%; justify-content: space-between; }
 }
 
 html, button, input, textarea, select { font-variant-ligatures: no-contextual; }
+
+/* a long token in running text (a bech32 string, a hash) breaks instead of
+   widening the page */
+p code, li code, td code { overflow-wrap: anywhere; }

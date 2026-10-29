@@ -204,26 +204,6 @@ moon run src/examples/tour --target wasm-gc
 moon run src/examples/integration --target wasm-gc
 ```
 
-## Upgrading from 0.4
-
-`pack`, `unpack`, `lookup_of`, `text_of` and `ascii` moved from the root package into
-`moonbitstack/moonbase/internal`. They were always machinery for the sub-packages —
-no encoding was ever written with them from outside — and 0.5 puts them where the
-compiler can say so. Nothing else was removed.
-
-| 0.4 | 0.5 |
-|:--|:--|
-| `@moonbase.pack(bytes, bits, digits, pad)` | `@internal.pack(…)` |
-| `@moonbase.unpack(text, bits, table, pad)` | `@internal.unpack(…)` |
-| `@moonbase.lookup_of(text)` | `@internal.lookup_of(text)` |
-| `@moonbase.text_of(bytes)` | `@internal.text_of(bytes)` |
-| `@moonbase.ascii(text)` | `@internal.ascii(text)` |
-
-If you were calling them, the encoding you wanted is one of the packages above; if
-you were extending the library, add `"moonbitstack/moonbase/internal"` to your
-`moon.pkg` and keep going. Everything that was public API — `encode`, `decode`,
-`Alphabet`, `Malformed`, the integer and big-number faces — is unchanged.
-
 ## Licence
 
 Apache-2.0.
