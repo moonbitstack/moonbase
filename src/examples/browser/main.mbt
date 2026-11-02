@@ -35,7 +35,7 @@ fn encoded(kind : String, b : Bytes) -> String raise @moonbase.Malformed {
     "base256emoji" => {
       // Multibase writes the alphabet's rocket as the prefix; the body follows.
       let s = @multibase.encode(b, base=Base256Emoji)
-      s.view(start_offset=s.offset_of_nth_char(1).unwrap_or(0)).to_owned()
+      s.exact_view(start=s.offset_of_nth_char(1).unwrap_or(0)).to_owned()
     }
     _ => abort("no encoding called \{kind}")
   }
@@ -98,7 +98,7 @@ fn letters(a : @moonbase.Alphabet) -> String {
 pub fn alphabets() -> String {
   let words = Bytes::makei(32, i => i.to_byte())
   let spelled = @bech32.encode_words("a", words) catch { _ => "" }
-  let bech32 = spelled.view(start_offset=2, end_offset=34).to_owned()
+  let bech32 = spelled.exact_view(start=2, end=34).to_owned()
   let json : Json = {
     "base10": Json::string(letters(@base10.alphabet)),
     "base36": Json::string(letters(@base36.alphabet)),
