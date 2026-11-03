@@ -1,6 +1,6 @@
 name = "moonbitstack/moonbase"
 
-version = "0.4.2"
+version = "0.4.3"
 
 readme = "README.md"
 
@@ -21,7 +21,19 @@ keywords = [
   "base64",
   "base85",
   "bech32",
+  "bech32m",
   "multibase",
+  "base64url",
+  "hex",
+  "base32hex",
+  "crockford",
+  "z85",
+  "ascii85",
+  "rfc4648",
+  "encoding",
+  "binary-to-text",
+  "codec",
+  "moonbit",
 ]
 
 description = "Every base encoding, one shape: base2 through base85, bech32 and multibase for MoonBit."
