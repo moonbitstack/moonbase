@@ -99,6 +99,8 @@ def parse_source_doc(path: pathlib.Path) -> dict[str, str]:
             if name is not None and name not in DERIVED_SUFFIXES:
                 docs[name] = " ".join(b for b in buffer if b).strip()
             buffer = []
+        elif s.startswith("#"):
+            pass
         else:
             # any non-doc, non-public line ends a pending comment block
             buffer = []
