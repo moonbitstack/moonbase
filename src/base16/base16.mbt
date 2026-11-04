@@ -5,10 +5,11 @@
 /// Which case the digits are written in. Decoding accepts either whatever this
 /// says, since a hexadecimal document written by someone else is as likely to
 /// be upper case as lower.
+#derive(Eq, Debug)
 pub(all) enum Kind {
   Lower
   Upper
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Kind with Eq::{equal, not_equal}

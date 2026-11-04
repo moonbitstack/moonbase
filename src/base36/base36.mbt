@@ -9,10 +9,11 @@
 
 ///|
 /// Which case the digits are written in.
+#derive(Eq, Debug)
 pub(all) enum Kind {
   Lower
   Upper
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Kind with Eq::{equal, not_equal}

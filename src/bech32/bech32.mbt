@@ -10,10 +10,11 @@
 /// version 1 up is bech32m. A format that has never used bech32 at all — a
 /// lightning invoice, say — picks bech32m, because the amendment is the one that
 /// does not have the insertion weakness.
+#derive(Eq, Debug)
 pub(all) enum Kind {
   Bech32
   Bech32m
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Kind with Eq::{equal, not_equal}
@@ -24,12 +25,13 @@ pub extend Kind with Debug::{to_repr}
 ///|
 /// A bech32 string taken apart: the prefix a human reads, and the data a machine
 /// reads.
+#derive(Eq, Debug)
 pub(all) struct Decoded {
   /// The human-readable part, lower case.
   hrp : String
   /// The data part, as bytes.
   data : Bytes
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Decoded with Eq::{equal, not_equal}

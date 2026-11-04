@@ -26,21 +26,23 @@ pub fn encode_bytes(BytesView, Alphabet) -> Bytes
 pub fn encode_int(UInt64, Alphabet) -> String
 
 // Errors
+#derive(Eq, @debug.Debug)
 pub(all) suberror BadAlphabet {
   NotAscii(at~ : Int32, char~ : Char)
   Repeated(at~ : Int32, char~ : Char)
   TooFew(count~ : Int32)
-} derive(Eq, @debug.Debug)
+}
 pub fn BadAlphabet::equal(Self, Self) -> Bool
 pub fn BadAlphabet::not_equal(Self, Self) -> Bool
 pub fn BadAlphabet::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) suberror Malformed {
   Bad(at~ : Int32, char~ : Char)
   Truncated(at~ : Int32)
   Padding(at~ : Int32)
   Checksum(at~ : Int32)
-} derive(Eq, @debug.Debug)
+}
 pub fn Malformed::equal(Self, Self) -> Bool
 pub fn Malformed::not_equal(Self, Self) -> Bool
 pub fn Malformed::to_repr(Self) -> @debug.Repr

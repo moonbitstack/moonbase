@@ -8,6 +8,7 @@
 /// because "it did not decode" is not enough to fix a malformed document. The
 /// old spelling returned `None` and said nothing; callers who only want that
 /// much can still write `try? decode(s)`.
+#derive(Eq, Debug)
 pub(all) suberror Malformed {
   /// A character outside the alphabet, at this index.
   Bad(at~ : Int32, char~ : Char)
@@ -17,7 +18,7 @@ pub(all) suberror Malformed {
   Padding(at~ : Int32)
   /// A checksum that does not match what the payload says it should be.
   Checksum(at~ : Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Malformed with Eq::{equal, not_equal}
@@ -30,6 +31,7 @@ pub extend Malformed with Debug::{to_repr}
 ///
 /// Separate from [`Malformed`] on purpose: a malformed input is the caller's
 /// data, a malformed alphabet is the caller's code.
+#derive(Eq, Debug)
 pub(all) suberror BadAlphabet {
   /// A character that is not ASCII, at this index in the alphabet.
   NotAscii(at~ : Int32, char~ : Char)
@@ -37,7 +39,7 @@ pub(all) suberror BadAlphabet {
   Repeated(at~ : Int32, char~ : Char)
   /// Fewer than two digits, which is not a positional system.
   TooFew(count~ : Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend BadAlphabet with Eq::{equal, not_equal}

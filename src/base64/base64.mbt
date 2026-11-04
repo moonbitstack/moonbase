@@ -4,10 +4,11 @@
 ///|
 /// Which alphabet: the ordinary one, or the URL-safe one that trades `+/` for
 /// `-_` so the result survives a query string and a file name.
+#derive(Eq, Debug)
 pub(all) enum Kind {
   Std
   Url
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Kind with Eq::{equal, not_equal}

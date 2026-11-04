@@ -28,18 +28,20 @@ pub fn words_of(BytesView) -> Bytes
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Decoded {
   hrp : String
   data : Bytes
-} derive(Eq, @debug.Debug)
+}
 pub fn Decoded::equal(Self, Self) -> Bool
 pub fn Decoded::not_equal(Self, Self) -> Bool
 pub fn Decoded::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Kind {
   Bech32
   Bech32m
-} derive(Eq, @debug.Debug)
+}
 pub fn Kind::equal(Self, Self) -> Bool
 pub fn Kind::not_equal(Self, Self) -> Bool
 pub fn Kind::to_repr(Self) -> @debug.Repr

@@ -10,11 +10,12 @@
 /// put inside a string literal, but with no shortcuts, so the length must be a
 /// multiple of four. `Ipv6` is RFC 1924's: the input is one 128-bit number, not a
 /// run of four-byte groups.
+#derive(Eq, Debug)
 pub(all) enum Kind {
   Ascii85
   Z85
   Ipv6
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Kind with Eq::{equal, not_equal}

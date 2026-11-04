@@ -4,12 +4,13 @@
 ///|
 /// Which alphabet: the ordinary one, the extended-hex one whose characters sort
 /// in the same order as the bytes they encode, Crockford's, or z-base-32's.
+#derive(Eq, Debug)
 pub(all) enum Kind {
   Std
   Hex
   Crockford
   Z
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Kind with Eq::{equal, not_equal}

@@ -10,6 +10,7 @@
 /// it was handed in order to write it back the same way. `base256emoji` is in the
 /// table too, even though a character standing for a byte is not a base at all in
 /// the bit-packing sense.
+#derive(Eq, Debug)
 pub(all) enum Base {
   Base2
   Base8
@@ -35,7 +36,7 @@ pub(all) enum Base {
   Base64Url
   Base64UrlPad
   Base256Emoji
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Base with Eq::{equal, not_equal}

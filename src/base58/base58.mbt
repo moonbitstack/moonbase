@@ -16,11 +16,12 @@
 /// not a string from another. Bitcoin's came first; Flickr reordered it to keep
 /// upper case out of the way of a URL; Ripple put the characters it uses most
 /// where the digits go.
+#derive(Eq, Debug)
 pub(all) enum Kind {
   Bitcoin
   Flickr
   Ripple
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Kind with Eq::{equal, not_equal}

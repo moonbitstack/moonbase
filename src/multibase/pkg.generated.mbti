@@ -28,6 +28,7 @@ pub fn prefix(Base) -> Char
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum Base {
   Base2
   Base8
@@ -53,7 +54,7 @@ pub(all) enum Base {
   Base64Url
   Base64UrlPad
   Base256Emoji
-} derive(Eq, @debug.Debug)
+}
 pub fn Base::equal(Self, Self) -> Bool
 pub fn Base::not_equal(Self, Self) -> Bool
 pub fn Base::to_repr(Self) -> @debug.Repr
