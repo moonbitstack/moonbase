@@ -24,11 +24,11 @@ the same order, so reading one is reading all of them.
 let data = b"moonbase"
 let pem = "bW9vbmJhc2U=\n"                        // a PEM body, newline and all
 
-@base64.encode(data[:])                           // "bW9vbmJhc2U="
-@base64.encode(data[:], kind=Url, padding=false)  // "bW9vbmJhc2U"
-@base64.encode_bytes(data[:])                     // the ASCII bytes, no String on the way
-@base64.decode("bW9vbmJhc2U=")                    // b"moonbase"
-@base64.decode_lossy(pem)                         // b"moonbase"
+assert_eq(@base64.encode(data[:]), "bW9vbmJhc2U=")
+assert_eq(@base64.encode(data[:], kind=@base64.Url, padding=false), "bW9vbmJhc2U")
+assert_eq(@base64.encode_bytes(data[:]), b"bW9vbmJhc2U=")   // the ASCII bytes
+assert_eq(@base64.decode("bW9vbmJhc2U="), data)
+assert_eq(@base64.decode_lossy(pem), data)
 ```
 
 ## Install
@@ -60,20 +60,42 @@ import {
 Variants are a named argument, not another function name:
 
 ```moonbit
-@base32.encode(data[:], kind=Hex)          // "DLNMURJ2C5PMA==="
-@base32.encode(data[:], kind=Crockford)    // "DNQPYVK2C5SPA"
-@base16.encode(data[:], kind=Upper)        // "6D6F6F6E62617365"
-@base64.encode(data[:], padding=false)     // "bW9vbmJhc2U"
-@base85.encode(b"\x00\xff\x01\xfe"[:], kind=Z85)   // "0ri90"
+assert_eq(@base32.encode(data[:], kind=@base32.Hex), "DLNMURJ2C5PMA===")
+assert_eq(@base32.encode(data[:], kind=@base32.Crockford), "DNQPYVK2C5SPA")
+assert_eq(@base16.encode(data[:], kind=@base16.Upper), "6D6F6F6E62617365")
+assert_eq(@base64.encode(data[:], padding=false), "bW9vbmJhc2U")
+assert_eq(@base85.encode(b"\x00\xff\x01\xfe"[:], kind=@base85.Z85), "0ri90")
 ```
 
-Decoding reads either padding by default. base32 and base64 take `padding` to require or forbid the `=`, and `strict` to refuse an incomplete run of `=` and spare bits that are not zero, so a format that compares or signs the text accepts only the spelling `encode` writes:
+## Reading what a format wrote
+
+Decoding reads either padding by default. base32 and base64 take `padding` to require
+or forbid the `=`, and `strict` to refuse an incomplete run of `=` and spare bits
+that are not zero, so a format that compares or signs the text accepts only the
+spelling `encode` writes:
 
 ```moonbit
-@base64.decode("Zg==", padding=true, strict=true)   // b"f"
-@base64.decode("Zh==", strict=true)                 // raises Padding(at=1)
-@base64.decode("Zg==", padding=false)               // raises Padding(at=2)
+assert_eq(@base64.decode("Zg==", padding=true, strict=true), b"f")
+let stray = try {
+  ignore(@base64.decode("Zg==", padding=false))
+  "decoded"
+} catch {
+  @moonbase.Padding(at~) => "padding at " + at.to_string()
+  _ => "another failure"
+}
+assert_eq(stray, "padding at 2")
 ```
+
+A body that arrived with its line breaks in it — an HTTP header split by a proxy, a
+key pasted out of a terminal — goes through `whitespace`. It skips the four ASCII
+blanks and nothing else, so a typo still fails:
+
+```moonbit
+assert_eq(@base64.decode("bW9v\nbmJh\nc2U=", whitespace=true), data)
+```
+
+`decode_lossy` is the other end: it skips everything the alphabet does not hold,
+which is what a PEM body and a `ab:cd:ef` fingerprint need.
 
 ## Streaming
 
@@ -85,13 +107,13 @@ you; the bytes that come out are the bytes one call would have produced.
 let sink = @base64.sink()
 sink.write(b"moon"[:])
 sink.write(b"base"[:])
-sink.finish()                    // "bW9vbmJhc2U="
+assert_eq(sink.finish(), "bW9vbmJhc2U=")
 
 let source = @base64.source()
-source.write("bW9vbm")           // six characters are four bytes and four bits
-source.drain()                   // b"moon" — the leftover bits stay behind
+source.write("bW9vbm")
+assert_eq(source.drain(), b"moon")   // six characters are four bytes and four bits
 source.write("Jhc2U=")
-source.finish()                  // b"base"
+assert_eq(source.finish(), b"base")
 ```
 
 `drain()` hands over what is already decided and keeps the rest; `finish()` flushes
@@ -108,16 +130,17 @@ base36, base58 and base62 add `encode_int` / `decode_int`, for values where lead
 zeros have no meaning.
 
 ```moonbit
-@base36.encode_int(123456789)   // "21i3v9"
-@base62.encode_int(123456789)   // "8M0kX"
-@base36.decode_int("21i3v9")    // 123456789
+assert_eq(@base36.encode_int(123456789), "21i3v9")
+assert_eq(@base62.encode_int(123456789), "8M0kX")
+assert_eq(@base36.decode_int("21i3v9"), 123456789UL)
 ```
 
 Anything larger goes through `BigInt`, on any alphabet:
 
 ```moonbit
-@moonbase.encode_big(@bigint.BigInt::from_int(123456789), hex)   // "75bcd15"
-@moonbase.decode_big("75bcd15", hex)                             // the same number
+let hex = @moonbase.Alphabet::of("0123456789abcdef")
+assert_eq(@moonbase.encode_big(@bigint.BigInt::from_int(123456789), hex), "75bcd15")
+assert_eq(@moonbase.decode_big("75bcd15", hex), @bigint.BigInt::from_int(123456789))
 ```
 
 ## Failures say where
@@ -125,22 +148,24 @@ Anything larger goes through `BigInt`, on any alphabet:
 A malformed input names the index it broke at, instead of a silent `None`.
 
 ```moonbit
-try {
-  @base64.decode("Zm*vYg==")
+let failure = try {
+  ignore(@base64.decode("Zm*vYg=="))
+  "decoded"
 } catch {
-  failure => match failure {
-    Bad(at~, char~) => println("bad " + char.to_string() + " at " + at.to_string())
-    Truncated(at~)  => println("truncated at " + at.to_string())
-    Padding(at~)    => println("padding at " + at.to_string())
-    Checksum(at~)   => println("checksum at " + at.to_string())
-  }
-} noraise {
-  _ => println("decoded")
+  @moonbase.Bad(at~, char~) => "bad " + char.to_string() + " at " + at.to_string()
+  @moonbase.Truncated(at~)       => "truncated at " + at.to_string()
+  @moonbase.Padding(at~)         => "padding at " + at.to_string()
+  @moonbase.Checksum(at~)        => "checksum at " + at.to_string()
 }
+assert_eq(failure, "bad * at 2")
 ```
 
-Want the old "just tell me it failed"? `try? @base64.decode(s)` gives you a
-`Result`.
+Want only a yes-or-no? Turn it into a `Result` and match on that:
+
+```moonbit
+let outcome = try Ok(@base64.decode("Zm*vYg==")) catch { failure => Err(failure) }
+assert_eq(outcome is Err(_), true)
+```
 
 ## Custom alphabets
 
@@ -148,7 +173,7 @@ The positional core is public, so any base-N system is two lines.
 
 ```moonbit
 let crockford = @moonbase.Alphabet::new("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
-@moonbase.encode(data[:], crockford)   // "6TVVFDSH62WV5"
+assert_eq(@moonbase.encode(data[:], crockford), "6TVVFDSH62WV5")
 ```
 
 `Alphabet::new` raises when the alphabet is wrong — a repeated character, a non-ASCII
@@ -161,18 +186,21 @@ character, or fewer than two digits — because it often arrives from configurat
 to read itself.
 
 ```moonbit
-@multibase.encode(data[:], base=Base58Btc)   // "zKJfFLz7PRba"
-@multibase.detect("zKJfFLz7PRba")            // Some(Base58Btc)
-@multibase.decode("zKJfFLz7PRba")            // b"moonbase"
+assert_eq(@multibase.encode(data[:], base=@multibase.Base58Btc), "zKJfFLz7PRba")
+assert_eq(@multibase.detect("zKJfFLz7PRba"), Some(@multibase.Base58Btc))
+assert_eq(@multibase.decode("zKJfFLz7PRba"), data)
 ```
 
 `bech32` is the other way round: it makes the prefix part of the checksum, so a
 typo in the prefix is as visible as a typo anywhere else.
 
 ```moonbit
-@bech32.encode("moonbase", data[:])                    // "moonbase1d4hk7mnzv9ek2s84pra"
-@bech32.encode("moonbase", data[:], kind=Bech32m)      // "moonbase1d4hk7mnzv9ek29m9dxl"
-@bech32.decode_words("moonbase1d4hk7mnzv9ek2s84pra")   // { hrp: "moonbase", words: … }
+assert_eq(@bech32.encode("moonbase", data[:]), "moonbase1d4hk7mnzv9ek2s84pra")
+assert_eq(
+  @bech32.encode("moonbase", data[:], kind=@bech32.Bech32m),
+  "moonbase1d4hk7mnzv9ek29m9dxl",
+)
+assert_eq(@bech32.decode_words("moonbase1d4hk7mnzv9ek2s84pra").hrp, "moonbase")
 ```
 
 ## The thirteen encodings
