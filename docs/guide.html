@@ -55,10 +55,7 @@
         <h2>Install</h2>
         <p>Add the package, then import only the encodings you need. An application that uses
         base64 does not link base58's big-integer core.</p>
-        <div class="example"><pre><code><span class="cmt">// moon.mod</span>
-import {
-  "moonbitstack/moonbase@0.4.1",
-}
+        <div class="example"><pre><code><span class="cmt">$ moon add moonbitstack/moonbase</span>
 
 <span class="cmt">// moon.pkg</span>
 import {
@@ -70,8 +67,8 @@ import {
         <h2>Your first encode</h2>
         <p><code>encode</code> takes a <code>BytesView</code> and returns a <code>String</code>.</p>
         <div class="example"><pre><code>let data = b"moonbase"
-@base64.encode(data[:])                           <span class="cmt">// "bW9vbmJhc2U="</span>
-@base64.encode(data[:], kind=Url, padding=false)  <span class="cmt">// "bW9vbmJhc2U"</span></code></pre></div>
+@base64.encode(data[:])                                       <span class="cmt">// "bW9vbmJhc2U="</span>
+@base64.encode(data[:], kind=@base64.Url, padding=false)      <span class="cmt">// "bW9vbmJhc2U"</span></code></pre></div>
         <div class="output">bW9vbmJhc2U=
 bW9vbmJhc2U</div>
         <p>To go back, <code>decode</code> returns the bytes and raises <code>Malformed</code> on bad
@@ -101,12 +98,12 @@ bW9vbmJhc2U</div>
         <h2>Variants</h2>
         <p>Variants are a named argument, not a new function. base16 switches case, base32 has four
         alphabets, base58 three, base85 three, and base64 can switch alphabet or drop padding.</p>
-        <div class="example"><pre><code>@base16.encode(data[:])                    <span class="cmt">// "6d6f6f6e62617365"</span>
-@base16.encode(data[:], kind=Upper)        <span class="cmt">// "6D6F6F6E62617365"</span>
-@base32.encode(data[:], kind=Hex)          <span class="cmt">// "DLNMURJ2C5PMA==="</span>
-@base32.encode(data[:], kind=Crockford)    <span class="cmt">// "DNQPYVK2C5SPA"</span>
-@base85.encode(data[:], kind=Z85)          <span class="cmt">// "zeTugvQTs?"</span>
-@base64.encode(data[:], padding=false)     <span class="cmt">// "bW9vbmJhc2U"</span></code></pre></div>
+        <div class="example"><pre><code>@base16.encode(data[:])                            <span class="cmt">// "6d6f6f6e62617365"</span>
+@base16.encode(data[:], kind=@base16.Upper)        <span class="cmt">// "6D6F6F6E62617365"</span>
+@base32.encode(data[:], kind=@base32.Hex)          <span class="cmt">// "DLNMURJ2C5PMA==="</span>
+@base32.encode(data[:], kind=@base32.Crockford)    <span class="cmt">// "DNQPYVK2C5SPA"</span>
+@base85.encode(data[:], kind=@base85.Z85)          <span class="cmt">// "zeTugvQTs?"</span>
+@base64.encode(data[:], padding=false)             <span class="cmt">// "bW9vbmJhc2U"</span></code></pre></div>
         <div class="output">6d6f6f6e62617365
 6D6F6F6E62617365
 DLNMURJ2C5PMA===
@@ -168,10 +165,10 @@ b"base"</div>
         <p><code>multibase</code> puts one character in front of any of the encodings above, so the
         string says how to read itself. <code>detect</code> answers without decoding, and the
         failure index of a bad body counts from the start of the whole string, prefix included.</p>
-        <div class="example"><pre><code>@multibase.encode(data[:], base=Base58Btc)  <span class="cmt">// "zKJfFLz7PRba"</span>
-@multibase.encode(data[:], base=Base32)     <span class="cmt">// "bnvxw63tcmfzwk"</span>
-@multibase.detect("zKJfFLz7PRba")           <span class="cmt">// Some(Base58Btc)</span>
-@multibase.decode("zKJfFLz7PRba")           <span class="cmt">// b"moonbase"</span></code></pre></div>
+        <div class="example"><pre><code>@multibase.encode(data[:], base=@multibase.Base58Btc)  <span class="cmt">// "zKJfFLz7PRba"</span>
+@multibase.encode(data[:], base=@multibase.Base32)     <span class="cmt">// "bnvxw63tcmfzwk"</span>
+@multibase.detect("zKJfFLz7PRba")                      <span class="cmt">// Some(Base58Btc)</span>
+@multibase.decode("zKJfFLz7PRba")                      <span class="cmt">// b"moonbase"</span></code></pre></div>
         <div class="output">zKJfFLz7PRba
 bnvxw63tcmfzwk
 Some(Base58Btc)
@@ -182,7 +179,7 @@ b"moonbase"</div>
         bytes, and <code>encode_words</code> for one that does not, such as a witness program.</p>
         <div class="example"><pre><code>@bech32.encode("moonbase", data[:])
   <span class="cmt">// "moonbase1d4hk7mnzv9ek2s84pra"</span>
-@bech32.encode("moonbase", data[:], kind=Bech32m)
+@bech32.encode("moonbase", data[:], kind=@bech32.Bech32m)
   <span class="cmt">// "moonbase1d4hk7mnzv9ek29m9dxl"</span>
 @bech32.decode_words("moonbase1d4hk7mnzv9ek2s84pra").hrp
   <span class="cmt">// "moonbase"</span></code></pre></div>
@@ -228,23 +225,33 @@ Some(15)</div>
   }
 } noraise { _ =&gt; println("decoded") }</code></pre></div>
         <div class="output">bad char * at 2</div>
-        <p>Want only a yes-or-no? <code>try?</code> gives you a <code>Result</code> instead of raising.</p>
-        <div class="example"><pre><code>let r = try? @base64.decode(s)   <span class="cmt">// Result[Bytes, Malformed]</span></code></pre></div>
+        <p>Want only a yes-or-no? Turn it into a <code>Result</code> and match on that.</p>
+        <div class="example"><pre><code>let outcome = try Ok(@base64.decode("Zm*vYg==")) catch { failure =&gt; Err(failure) }
+outcome is Err(_)   <span class="cmt">// true</span></code></pre></div>
+        <div class="output">true</div>
       </section>
 
       <section id="lossy">
         <h2>Lossy decode</h2>
         <p>A certificate fingerprint is hexadecimal with colons. <code>encode_colons</code> writes
         it; <code>decode_lossy</code> reads it back without being told about the colons.</p>
-        <div class="example"><pre><code>let print = @base16.encode_colons(b"\xab\xcd\xef"[:])
-print                                           <span class="cmt">// "ab:cd:ef"</span>
-@base16.decode_lossy(print)                     <span class="cmt">// b"\xab\xcd\xef"</span>
-@base16.encode(@base16.decode_lossy(print)[:])  <span class="cmt">// "abcdef"</span></code></pre></div>
+        <div class="example"><pre><code>let fingerprint = @base16.encode_colons(b"\xab\xcd\xef"[:])
+fingerprint                                          <span class="cmt">// "ab:cd:ef"</span>
+@base16.decode_lossy(fingerprint)                    <span class="cmt">// b"\xab\xcd\xef"</span>
+@base16.encode(@base16.decode_lossy(fingerprint)[:]) <span class="cmt">// "abcdef"</span></code></pre></div>
         <div class="output">ab:cd:ef
 b"\xab\xcd\xef"
 abcdef</div>
         <p>The same lossy reader swallows the newlines in a PEM body and the spaces in a pasted
         token. Every package has it.</p>
+        <p>It never fails, though, so a typo travels through as missing bytes. When the body has to
+        be right, ask <code>decode</code> to skip the blanks instead. <code>whitespace</code> folds
+        the four ASCII blanks — space, tab, line feed, carriage return — and leaves every other
+        character to be checked. It reaches base2, base8, base16, base32 and base64.</p>
+        <div class="example"><pre><code>@base64.decode("bW9v\nbmJh\nc2U=", whitespace=true)  <span class="cmt">// b"moonbase"</span>
+@base64.decode("bW9v\nbmJh\nc2U=")                   <span class="cmt">// Bad(at=4, char='\n')</span></code></pre></div>
+        <div class="output">b"moonbase"
+Bad(at=4, char='\n')</div>
       </section>
 
       <section id="strict">

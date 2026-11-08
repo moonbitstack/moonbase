@@ -109,7 +109,7 @@
         what you use — an app that needs base64 does not link base58's big-integer core.</p>
         <div class="example"><pre><code><span class="cmt">// the ordinary case</span>
 @base64.encode(data[:])                           <span class="cmt">// "bW9vbmJhc2U="</span>
-@base64.encode(data[:], kind=Url, padding=false)  <span class="cmt">// "bW9vbmJhc2U"</span>
+@base64.encode(data[:], kind=@base64.Url, padding=false)  <span class="cmt">// "bW9vbmJhc2U"</span>
 
 <span class="cmt">// a wire format that already holds bytes — no round trip through String</span>
 @base64.encode_bytes(data[:])</code></pre></div>
@@ -140,7 +140,7 @@ sink.finish()                    <span class="cmt">// "bW9vbmJhc2U="</span></cod
         <p><code>multibase</code> writes the encoding's name in front of the string;
         <code>bech32</code> folds the prefix into the checksum. Either way the reader does not
         have to be told which encoding it was handed.</p>
-        <div class="example"><pre><code>@multibase.encode(data[:], base=Base58Btc)  <span class="cmt">// "zKJfFLz7PRba"</span>
+        <div class="example"><pre><code>@multibase.encode(data[:], base=@multibase.Base58Btc)  <span class="cmt">// "zKJfFLz7PRba"</span>
 @multibase.decode("zKJfFLz7PRba")           <span class="cmt">// b"moonbase"</span>
 @bech32.encode("moonbase", data[:])         <span class="cmt">// "moonbase1d4hk7mnzv9ek2s84pra"</span></code></pre></div>
 
