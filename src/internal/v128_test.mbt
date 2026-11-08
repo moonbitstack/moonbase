@@ -82,3 +82,55 @@ test "a block boundary never changes a character" {
     )
   }
 }
+
+///|
+/// Whether a vector path exists to take. It exists for one backend only, which
+/// is why the test asks rather than assumes.
+#cfg(target="wasm")
+fn has_vector_path() -> Bool {
+  true
+}
+
+///|
+#cfg(not(target="wasm"))
+fn has_vector_path() -> Bool {
+  false
+}
+
+///|
+/// Every alphabet the library ships, and the run structure each one has. The
+/// shape a spelling takes decides how cheaply it is named, and a spelling that
+/// quietly stops qualifying would still encode correctly — it would only get
+/// slower, which no other test here would notice.
+test "every shipped alphabet takes the vector path" {
+  let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  let cases : Array[(String, Int32, String)] = [
+    ("base2", 1, "01"),
+    ("base8", 3, "01234567"),
+    ("base16 lower", 4, "0123456789abcdef"),
+    ("base16 upper", 4, "0123456789ABCDEF"),
+    ("base32 standard", 5, "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"),
+    ("base32 hexadecimal", 5, "0123456789ABCDEFGHIJKLMNOPQRSTUV"),
+    ("base32 Crockford", 5, "0123456789ABCDEFGHJKMNPQRSTVWXYZ"),
+    ("base32 z-base-32", 5, "ybndrfg8ejkmcpqxot1uwisza345h769"),
+    ("base64 standard", 6, letters + "+/"),
+    ("base64 url", 6, letters + "-_"),
+  ]
+  let input = probe(4096)
+  for entry in cases {
+    let (name, bits, text) = entry
+    let digits = alphabet(text)
+    let fast = @internal.pack_ascii(input[:], bits, digits, true)
+    let scalar = @internal.pack_scalar(input[:], bits, digits, true)
+    // z-base-32 has twenty-seven runs, none of them in a tail a sixteen-entry
+    // table could address, so it is the one spelling with no vector path.
+    let expected = has_vector_path() && name != "base32 z-base-32"
+    match fast {
+      Some(encoded) => {
+        assert_true(expected)
+        assert_eq(encoded, scalar)
+      }
+      None => assert_false(expected)
+    }
+  }
+}
