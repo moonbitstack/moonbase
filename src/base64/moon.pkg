@@ -7,3 +7,9 @@ import {
   "moonbitstack/moonbase",
   "moonbitstack/moonbase/internal",
 }
+
+// The two-way check against the core implementation lives here rather than in a script,
+// so a change on either side shows up as a failing test.
+import {
+  "moonbitlang/core/encoding/base64" @core64,
+} for "test"
