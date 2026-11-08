@@ -333,7 +333,7 @@ def main() -> None:
     page = shell("API Reference — moonbase", "\n".join(parts))
     out = ROOT.parent / "docs" / "api.html"
     out.parent.mkdir(exist_ok=True)
-    out.write_text(page, encoding="utf-8")
+    out.write_text(page, encoding="utf-8", newline="\n")
     total = sum(len(parse_mbti(ROOT / m)) for _, m, _, _ in PACKAGES)
     print("wrote %s (%d public items across %d packages)" % (out, total, len(PACKAGES)))
 

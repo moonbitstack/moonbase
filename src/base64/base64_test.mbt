@@ -210,3 +210,64 @@ test "the bytes form takes the same two knobs" {
   }
   assert_true(refused)
 }
+
+///|
+test "whitespace folds a wrapped body and still refuses the rest" {
+  assert_eq(@base64.decode("bW9v\nbmJh\r\nc2U=", whitespace=true), b"moonbase")
+  assert_eq(@base64.decode(" bW9v\tbmJhc2U= ", whitespace=true), b"moonbase")
+  assert_eq(
+    @base64.decode_bytes(b"bW9vbm\nJhc2U=", whitespace=true),
+    b"moonbase",
+  )
+  let refused = try @base64.decode("bW9v\nbmJh*c2U=", whitespace=true) catch {
+    @moonbase.Bad(at~, char~) => at == 9 && char == '*'
+    _ => false
+  } noraise {
+    _ => false
+  }
+  assert_true(refused)
+}
+
+///|
+test "whitespace composes with padding and strict" {
+  assert_eq(
+    @base64.decode("Zg==\n", padding=true, strict=true, whitespace=true),
+    b"f",
+  )
+  assert_eq(@base64.decode("Z g = = ", padding=true, whitespace=true), b"f")
+  let refused = try
+    @base64.decode("Zh==\n", strict=true, whitespace=true)
+  catch {
+    @moonbase.Padding(at~) => at == 1
+    _ => false
+  } noraise {
+    _ => false
+  }
+  assert_true(refused)
+}
+
+///|
+test "whitespace stays off unless it is asked for" {
+  let refused = try @base64.decode("Zg ==\n") catch {
+    @moonbase.Bad(at~, char~) => at == 2 && char == ' '
+    _ => false
+  } noraise {
+    _ => false
+  }
+  assert_true(refused)
+}
+
+///|
+test "whitespace skips only the four ASCII blanks" {
+  for blank in ['\u{0b}', '\u{0c}'] {
+    let refused = try
+      @base64.decode("Zg" + blank.to_string() + "==", whitespace=true)
+    catch {
+      @moonbase.Bad(char~, ..) => char == blank
+      _ => false
+    } noraise {
+      _ => false
+    }
+    assert_true(refused)
+  }
+}

@@ -105,3 +105,12 @@ test "a streaming failure names the index in the whole input" {
     _ => fail("expected the x to be named at its own index")
   }
 }
+
+///|
+test "whitespace folds a grouped bit string" {
+  assert_eq(
+    @base2.decode("01101101 01101111 01101111 01101110", whitespace=true),
+    b"moon",
+  )
+  assert_eq(@base2.decode("01101101011011110110111101101110"), b"moon")
+}

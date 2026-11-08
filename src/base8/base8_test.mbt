@@ -108,3 +108,12 @@ test "a hand-written sink and source round trip a fixed payload" {
   }
   assert_eq(source.finish(), b"\x00\xff\x01")
 }
+
+///|
+test "whitespace folds a grouped octal string" {
+  assert_eq(
+    @base8.decode("33267557\n33461141\n346624", whitespace=true),
+    b"moonbase",
+  )
+  assert_eq(@base8.decode("3326755733461141346624"), b"moonbase")
+}

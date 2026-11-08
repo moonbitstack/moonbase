@@ -268,3 +268,35 @@ test "the inputs Go reads and RFC 4648 does not are refused" {
   }
   assert_eq(at, 8)
 }
+
+///|
+test "whitespace folds a wrapped body and still refuses the rest" {
+  assert_eq(
+    @base32.decode("NVXW\n63TC\nMFZWK===", whitespace=true),
+    b"moonbase",
+  )
+  assert_eq(
+    @base32.decode_bytes(b"NVXW 63TC MFZWK===", whitespace=true),
+    b"moonbase",
+  )
+  let refused = try
+    @base32.decode("NVXW\n63TC*FZWK===", whitespace=true)
+  catch {
+    @moonbase.Bad(char~, ..) => char == '*'
+    _ => false
+  } noraise {
+    _ => false
+  }
+  assert_true(refused)
+}
+
+///|
+test "whitespace stays off unless it is asked for" {
+  let refused = try @base32.decode("NVXW 63TC MFZWK===") catch {
+    @moonbase.Bad(at~, char~) => at == 4 && char == ' '
+    _ => false
+  } noraise {
+    _ => false
+  }
+  assert_true(refused)
+}

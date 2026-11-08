@@ -21,14 +21,23 @@ pub fn encode_bytes(input : BytesView) -> Bytes {
 ///|
 /// Decode octal back to bytes. Fails at the first character outside `0`–`7`, or
 /// when the length cannot be a whole number of bytes.
-pub fn decode(input : StringView) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack(input, 3, lookup, false)
+///
+/// `whitespace` folds a body written out in groups and still refuses every
+/// character that is not a digit.
+pub fn decode(
+  input : StringView,
+  whitespace~ : Bool = false,
+) -> Bytes raise @moonbase.Malformed {
+  @internal.unpack(input, 3, lookup, false, whitespace~)
 }
 
 ///|
 /// Decode from ASCII bytes, for callers who never had a string.
-pub fn decode_bytes(input : BytesView) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack_bytes(input, 3, lookup, false)
+pub fn decode_bytes(
+  input : BytesView,
+  whitespace~ : Bool = false,
+) -> Bytes raise @moonbase.Malformed {
+  @internal.unpack_bytes(input, 3, lookup, false, whitespace~)
 }
 
 ///|

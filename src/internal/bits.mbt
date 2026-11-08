@@ -69,6 +69,8 @@ pub fn pack_bytes(
 /// `lossy` decides what an unknown character means: skipped, which is what a
 /// PEM body full of newlines needs, or an error naming where it was. `padding`
 /// and `strict` are the decoders' own, and do nothing when `lossy` is set.
+/// `whitespace` skips exactly the four ASCII blanks and nothing else, so a
+/// wrapped body decodes and a typo still fails.
 pub fn unpack(
   input : StringView,
   bits : Int32,
@@ -76,6 +78,7 @@ pub fn unpack(
   lossy : Bool,
   padding? : Bool,
   strict~ : Bool = false,
+  whitespace~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
   let out : Array[Byte] = []
   let mut buffer = 0
@@ -86,6 +89,9 @@ pub fn unpack(
   let mut last = -1
   for i in 0..<input.length() {
     let code = input[i].to_int()
+    if whitespace && blank(code) {
+      continue
+    }
     if code == 61 {
       if first_pad < 0 {
         first_pad = i
@@ -152,12 +158,21 @@ pub fn unpack_bytes(
   lossy : Bool,
   padding? : Bool,
   strict~ : Bool = false,
+  whitespace~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
   let out = StringBuilder()
   for i in 0..<input.length() {
     out.write_char(input[i].to_int().unsafe_to_char())
   }
-  unpack(out.to_string(), bits, lookup, lossy, padding?, strict~)
+  unpack(out.to_string(), bits, lookup, lossy, padding?, strict~, whitespace~)
+}
+
+///|
+/// The four ASCII blanks a line-wrapped body is folded with: space, tab, line
+/// feed, carriage return. Form feed and vertical tab are left out on purpose —
+/// nothing writes them, so meeting one is a sign the input is not what it says.
+pub fn blank(code : Int32) -> Bool {
+  code == 32 || code == 9 || code == 10 || code == 13
 }
 
 ///|

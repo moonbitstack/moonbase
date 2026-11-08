@@ -52,14 +52,23 @@ pub fn encode_colons(input : BytesView, kind~ : Kind = Lower) -> String {
 ///|
 /// Decode hexadecimal, in either case. Fails at the first character that is not
 /// a hexadecimal digit, or when the length is odd.
-pub fn decode(input : StringView) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack(input, 4, lookup, false)
+///
+/// `whitespace` folds a dump that was written out with spaces between the
+/// bytes and still refuses every character that is not a digit.
+pub fn decode(
+  input : StringView,
+  whitespace~ : Bool = false,
+) -> Bytes raise @moonbase.Malformed {
+  @internal.unpack(input, 4, lookup, false, whitespace~)
 }
 
 ///|
 /// Decode from ASCII bytes, for callers who never had a string.
-pub fn decode_bytes(input : BytesView) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack_bytes(input, 4, lookup, false)
+pub fn decode_bytes(
+  input : BytesView,
+  whitespace~ : Bool = false,
+) -> Bytes raise @moonbase.Malformed {
+  @internal.unpack_bytes(input, 4, lookup, false, whitespace~)
 }
 
 ///|

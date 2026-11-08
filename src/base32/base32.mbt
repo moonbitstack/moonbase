@@ -55,13 +55,26 @@ pub fn encode_bytes(
 /// tolerates: an incomplete run of `=`, and spare bits after the last byte that
 /// are not zero (RFC 4648 §3.5). Together they accept exactly the one spelling
 /// `encode` writes, which is what a format that compares or signs the text needs.
+///
+/// `whitespace` folds a body that arrived with its line breaks in it and still
+/// refuses every character that is not a digit, which is what [`decode_lossy`]
+/// (#decode_lossy) cannot promise.
 pub fn decode(
   input : StringView,
   kind~ : Kind = Std,
   padding? : Bool,
   strict~ : Bool = false,
+  whitespace~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack(input, 5, lookup(kind), false, padding?, strict~)
+  @internal.unpack(
+    input,
+    5,
+    lookup(kind),
+    false,
+    padding?,
+    strict~,
+    whitespace~,
+  )
 }
 
 ///|
@@ -71,8 +84,17 @@ pub fn decode_bytes(
   kind~ : Kind = Std,
   padding? : Bool,
   strict~ : Bool = false,
+  whitespace~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack_bytes(input, 5, lookup(kind), false, padding?, strict~)
+  @internal.unpack_bytes(
+    input,
+    5,
+    lookup(kind),
+    false,
+    padding?,
+    strict~,
+    whitespace~,
+  )
 }
 
 ///|

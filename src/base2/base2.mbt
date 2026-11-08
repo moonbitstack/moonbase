@@ -19,14 +19,23 @@ pub fn encode_bytes(input : BytesView) -> Bytes {
 ///|
 /// Decode binary back to bytes. Fails at the first character that is not `0` or
 /// `1`, or when the length is not a multiple of eight.
-pub fn decode(input : StringView) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack(input, 1, lookup, false)
+///
+/// `whitespace` folds a bit string that was written out in groups and still
+/// refuses every character that is not a bit.
+pub fn decode(
+  input : StringView,
+  whitespace~ : Bool = false,
+) -> Bytes raise @moonbase.Malformed {
+  @internal.unpack(input, 1, lookup, false, whitespace~)
 }
 
 ///|
 /// Decode from ASCII bytes, for callers who never had a string.
-pub fn decode_bytes(input : BytesView) -> Bytes raise @moonbase.Malformed {
-  @internal.unpack_bytes(input, 1, lookup, false)
+pub fn decode_bytes(
+  input : BytesView,
+  whitespace~ : Bool = false,
+) -> Bytes raise @moonbase.Malformed {
+  @internal.unpack_bytes(input, 1, lookup, false, whitespace~)
 }
 
 ///|

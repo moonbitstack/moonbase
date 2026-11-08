@@ -147,3 +147,24 @@ test "a streaming failure names the index in the whole input" {
   lossy.write("ab:cd ef")
   assert_eq(lossy.finish(), b"\xab\xcd\xef")
 }
+
+///|
+test "whitespace folds a dump and still refuses the rest" {
+  assert_eq(
+    @base16.decode("6d 6f 6f\n6e 62 61 73 65", whitespace=true),
+    b"moonbase",
+  )
+  assert_eq(
+    @base16.decode_bytes(b"6D6F\n6F6E62617365", whitespace=true),
+    b"moonbase",
+  )
+  let refused = try
+    @base16.decode("6d6f 6f6e 62 61 73 6g", whitespace=true)
+  catch {
+    @moonbase.Bad(at~, char~) => at == 20 && char == 'g'
+    _ => false
+  } noraise {
+    _ => false
+  }
+  assert_true(refused)
+}
