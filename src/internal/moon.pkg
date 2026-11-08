@@ -8,4 +8,11 @@
 // package reach the kernel without the root having to re-export it.
 import {
   "moonbitstack/moonbase",
+  "moonbitlang/core/v128",
 }
+
+// The vector path is compiled out on the backends without 128-bit lanes, which
+// leaves the import unused there; this is the same exemption the core encoders
+// carry for the same reason.
+
+warnings = "-29"

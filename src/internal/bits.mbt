@@ -2,13 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
-/// The bit packer behind base16, base32 and base64.
+/// The bit packer behind base2, base8, base16, base32 and base64.
 ///
-/// The three differ in one number — how many bits a character carries — and in
+/// The five differ in one number — how many bits a character carries — and in
 /// their alphabets. Writing the packing once means a fix to the padding rules
-/// or the error positions lands in all three at once, and it is why each of
+/// or the error positions lands in all five at once, and it is why each of
 /// those packages is a table and five one-line functions.
+///
+/// On the backends with 128-bit lanes the whole input, when it is long enough,
+/// is handed to [`pack_ascii`](#pack_ascii), which does the same arithmetic
+/// sixteen characters wide. Everything else falls through to the loop below.
 pub fn pack(
+  input : BytesView,
+  bits : Int32,
+  digits : Array[Char],
+  pad : Bool,
+) -> String {
+  match pack_ascii(input, bits, digits, pad) {
+    Some(text) => text
+    None => pack_scalar(input, bits, digits, pad)
+  }
+}
+
+///|
+/// The scalar packer: the definition the vector path is measured against, and
+/// the implementation on every backend without lanes.
+pub fn pack_scalar(
   input : BytesView,
   bits : Int32,
   digits : Array[Char],

@@ -18,7 +18,11 @@ pub fn lookup_of_both(String, String) -> Array[Int32]
 
 pub fn pack(BytesView, Int32, Array[Char], Bool) -> String
 
+pub fn pack_ascii(BytesView, Int32, Array[Char], Bool) -> String?
+
 pub fn pack_bytes(BytesView, Int32, Array[Char], Bool) -> Bytes
+
+pub fn pack_scalar(BytesView, Int32, Array[Char], Bool) -> String
 
 pub fn sha256(BytesView) -> Bytes
 
