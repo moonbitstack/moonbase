@@ -102,18 +102,51 @@ pub fn unpack(
   // One allocation, sized by the widest the input could decode to, instead of a
   // growable array: this loop writes a byte whenever the accumulator fills, and
   // growing for that turned out to be a fifth of what the whole decode cost.
-  let out = FixedArray::make(input.length() * bits / 8 + 1, b'\x00')
-  let head = 0
-  let mut written = head / 4 * 3
+  let out = FixedArray::make(input.length() * bits / 8 + 4, b'\x00')
+  // The four-at-a-time path needs an alphabet whose characters all carry six
+  // bits, and an input that nothing has to be skipped in.
+  let bulk = bits == 6 && !lossy && !whitespace
+  let mut written = 0
   let mut buffer = 0
   let mut held = 0
-  let mut taken = head
+  let mut taken = 0
   let mut pads = 0
   let mut first_pad = -1
   let mut last = -1
-  for i in 0..<input.length() {
+  let mut i = 0
+  while i < input.length() {
+    // Four characters at a time when they are four plain characters of a
+    // six-bit alphabet: twenty-four bits become three bytes with no
+    // accumulator, no inner loop and no per-character mask. Anything else — a
+    // blank, a `=`, a character outside the alphabet, the tail — falls through
+    // to the loop below, which is still the only place the rules live.
+    if bulk && i + 4 <= input.length() && out.length() - written >= 4 {
+      let c0 = input[i].to_int()
+      let c1 = input[i + 1].to_int()
+      let c2 = input[i + 2].to_int()
+      let c3 = input[i + 3].to_int()
+      if c0 < 128 && c1 < 128 && c2 < 128 && c3 < 128 {
+        let v0 = lookup[c0]
+        let v1 = lookup[c1]
+        let v2 = lookup[c2]
+        let v3 = lookup[c3]
+        // A miss is -1, and -1 survives an or, so one check covers all four.
+        let all = v0 | v1 | v2 | v3
+        if all >= 0 && all < 64 {
+          out[written] = ((v0 << 2) | (v1 >> 4)).to_byte()
+          out[written + 1] = (((v1 & 15) << 4) | (v2 >> 2)).to_byte()
+          out[written + 2] = (((v2 & 3) << 6) | v3).to_byte()
+          written = written + 3
+          taken = taken + 4
+          last = i + 3
+          i = i + 4
+          continue
+        }
+      }
+    }
     let code = input[i].to_int()
     if whitespace && blank(code) {
+      i = i + 1
       continue
     }
     if code == 61 {
@@ -121,6 +154,7 @@ pub fn unpack(
         first_pad = i
       }
       pads = pads + 1
+      i = i + 1
       continue
     }
     if first_pad >= 0 && !lossy {
@@ -130,6 +164,7 @@ pub fn unpack(
     let value = if code >= 0 && code < 128 { lookup[code] } else { -1 }
     if value < 0 {
       if lossy {
+        i = i + 1
         continue
       }
       raise @moonbase.Bad(at=i, char=code.unsafe_to_char())
@@ -144,6 +179,7 @@ pub fn unpack(
       written = written + 1
     }
     buffer = buffer & ((1 << held) - 1)
+    i = i + 1
   }
   if taken * bits % 8 >= bits {
     // A whole character is left over that cannot become a byte.
