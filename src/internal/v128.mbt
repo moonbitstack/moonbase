@@ -31,8 +31,7 @@ fn join(a : V128, b : V128, c : V128, d : V128) -> V128 {
 // The four cuts, one function to a bit width. The shift amounts have to be
 // literals: a vector shift takes its count from the instruction itself, so a
 // count the compiler only knows at run time falls back to a lane-by-lane
-// version and the whole path loses to the scalar loop. `bits` is therefore
-// branched on once per block, and each block is straight-line.
+// version and the whole path loses to the scalar loop.
 
 ///|
 /// One bit a character.
@@ -121,15 +120,36 @@ fn block6(lanes : V128) -> V128 {
 }
 
 ///|
+/// The vectors that name a value, worked out once per call.
+#cfg(target="wasm")
+priv struct Naming {
+  table : V128
+  below : V128
+  head : V128
+  at : V128
+  one : V128
+  fifteen : V128
+  single : Bool
+}
+
+///|
+/// Which run a value belongs to.
+#cfg(target="wasm")
+fn run_of(starts : Array[Int32], runs : Int32, value : Int32) -> Int32 {
+  let mut r = runs - 1
+  while r > 0 && starts[r] > value {
+    r = r - 1
+  }
+  r
+}
+
+///|
 /// Sixteen characters at a time, on the one backend where that pays.
 ///
 /// The gate is `wasm`, not "every backend with a 128-bit type": on the native
 /// backend of the toolchain this was built against, a `V128` operation lowers to
 /// a lane-by-lane sequence, and the same input measured nine to nineteen times
-/// slower through this path than through the scalar loop. The scalar loop is
-/// what native gets, and it is the faster of the two there by a wide margin —
-/// the same reason the core encoders' vector paths are slower than their scalar
-/// ones on native.
+/// slower through this path than through the scalar loop.
 ///
 /// [`pack`](#pack) is a loop over characters. This is the same loop done
 /// sixteen-wide, in three steps that map onto the encoding rather than onto one
@@ -140,15 +160,17 @@ fn block6(lanes : V128) -> V128 {
 ///   may overlap and the window is loaded once.
 /// - **cut.** Inside a lane the four fields sit at fixed offsets, so each one is
 ///   a shift and a mask — no per-character table, no branch on the bit count.
-/// - **name.** An alphabet is a sequence of constant-offset runs, and a value's
-///   run is one table entry plus one compare per boundary in its group of eight
-///   values. Two boundaries at most, which is what base64 needs: `+` and `/` are
-///   two separate runs that share a group.
+/// - **name.** One saturating subtract, a clamp and one lookup. The last stretch
+///   of the alphabet is addressed a value at a time; everything below it is
+///   class zero, or the top slot when a second run sits under it. That is the
+///   shape the core encoder hand-writes for its own alphabet, derived here from
+///   the alphabet instead — so base64 in both spellings, base32 in three,
+///   base16 in two and Crockford's all get it.
 ///
 /// Anything that is not a whole block — the last few bytes, the trailing `=`,
-/// an alphabet whose groups straddle more than two boundaries — is left to the
-/// scalar path: this answers `None` rather than a short string, so `pack` can
-/// hand the whole input to the loop it already had.
+/// an alphabet whose tail is both wide and multi-run — is left to the scalar
+/// path: this answers `None` rather than a short string, so `pack` can hand the
+/// whole input to the loop it already had.
 #cfg(target="wasm")
 #warnings("-14")
 pub fn pack_ascii(
@@ -169,54 +191,61 @@ pub fn pack_ascii(
   guard length <= 0x0FFF_FFFF else { return None }
   let group = group_of(bits)
 
-  // The alphabet, as runs of constant offset: within a run the character is the
-  // value plus a fixed offset, and every spelling in this library is a handful
-  // of runs.
-  let starts : Array[Byte] = Array::make(8, b'\x00')
-  let offsets : Array[Byte] = Array::make(8, b'\x00')
+  // The alphabet as runs of constant offset: inside a run the character is the
+  // value plus a fixed offset.
+  let starts : Array[Int32] = Array::make(8, 0)
+  let offsets : Array[Int32] = Array::make(8, 0)
   let mut runs = 1
   let mut previous = digits[0].to_int()
-  offsets[0] = previous.to_byte()
+  offsets[0] = previous
   for i in 1..<base {
     let offset = digits[i].to_int() - i
     if offset != previous {
       guard runs < 8 else { return None }
-      starts[runs] = i.to_byte()
-      offsets[runs] = (offset & 0xFF).to_byte()
+      starts[runs] = i
+      offsets[runs] = offset
       runs = runs + 1
       previous = offset
     }
   }
 
-  // Naming a value is then a table entry and one compare per boundary in its
-  // group of eight values. A group with three boundaries — Crockford's alphabet,
-  // which skips I, L, O and U — is answered with `None` and goes scalar.
-  let first_boundary : Array[Byte] = Array::make(16, b'\xFF')
-  let second_boundary : Array[Byte] = Array::make(16, b'\xFF')
-  let buckets : Array[Byte] = Array::make(16, b'\x00')
-  for g in 0..<8 {
-    let low = 8 * g
-    let mut seen = 0
-    let mut class = 0
-    for r in 1..<runs {
-      let start = starts[r].to_int()
-      if start < low {
-        class = class + 1
-      } else if start < low + 8 {
-        guard seen < 2 else { return None }
-        if seen == 0 {
-          first_boundary[g] = starts[r]
-        } else {
-          second_boundary[g] = starts[r]
-        }
-        seen = seen + 1
-      }
+  // The tail has to fit a sixteen-entry table, or be a single run so that the
+  // clamp folds it. A head of more than one boundary would need slots that
+  // collide, so that is not attempted either. z-base-32 meets neither condition
+  // — twenty-seven runs, all of them below the last — and goes scalar.
+  let mut tail = -1
+  for k in 1..<runs {
+    if k > 2 {
+      break
     }
-    buckets[g] = class.to_byte()
+    if base - starts[k] <= 14 || runs == k + 1 {
+      tail = k
+      break
+    }
   }
-  let class_offset : Array[Byte] = Array::make(16, b'\x00')
-  for r in 0..<runs {
-    class_offset[r] = offsets[r]
+  guard tail > 0 else { return None }
+  let below = starts[tail] - 1
+  let head = tail > 1
+  let table : Array[Byte] = Array::make(16, b'\x00')
+  // The run just under the tail is class zero.
+  table[0] = (offsets[tail - 1] & 0xFF).to_byte()
+  // Values from the tail's start get one class each, clamped to fourteen; a
+  // single-run tail therefore keeps landing on the same entry.
+  for c in 1..<15 {
+    table[c] = (offsets[run_of(starts, runs, below + c)] & 0xFF).to_byte()
+  }
+  // The first run, when there is one, takes the top slot.
+  if head {
+    table[15] = (offsets[0] & 0xFF).to_byte()
+  }
+  let names = Naming::{
+    table: vector(table),
+    below: @v128.i8x16_splat(below.to_byte()),
+    head: @v128.i8x16_splat((if head { starts[1] } else { 0 }).to_byte()),
+    at: @v128.i8x16_splat(starts[tail].to_byte()),
+    one: @v128.i8x16_splat(1),
+    fifteen: @v128.i8x16_splat(15),
+    single: runs == tail + 1,
   }
 
   let mut chars = (length * 8 + bits - 1) / bits
@@ -236,44 +265,16 @@ pub fn pack_ascii(
     gather_bytes[j * 4 + 3] = start.to_byte()
   }
   let gather = vector(gather_bytes)
-  let first_names = vector(first_boundary)
-  let second_names = vector(second_boundary)
-  let bucket_names = vector(buckets)
-  let offset_names = vector(class_offset)
   // An odd number of bits leaves the second and fourth lanes starting half a
   // byte into their window; `fill` shifts those two before cutting.
   let odd = 4 * bits % 8 != 0
   let blocks = match bits {
-    1 =>
-      fill(
-        input, 2, gather, odd, block1, first_names, second_names, bucket_names, offset_names,
-        out,
-      )
-    3 =>
-      fill(
-        input, 6, gather, odd, block3, first_names, second_names, bucket_names, offset_names,
-        out,
-      )
-    4 =>
-      fill(
-        input, 8, gather, odd, block4, first_names, second_names, bucket_names, offset_names,
-        out,
-      )
-    5 =>
-      fill(
-        input, 10, gather, odd, block5, first_names, second_names, bucket_names,
-        offset_names, out,
-      )
-    6 =>
-      fill(
-        input, 12, gather, odd, block6, first_names, second_names, bucket_names,
-        offset_names, out,
-      )
-    _ =>
-      fill(
-        input, 4, gather, odd, block2, first_names, second_names, bucket_names, offset_names,
-        out,
-      )
+    1 => fill(input, 2, gather, odd, block1, names, out)
+    3 => fill(input, 6, gather, odd, block3, names, out)
+    4 => fill(input, 8, gather, odd, block4, names, out)
+    5 => fill(input, 10, gather, odd, block5, names, out)
+    6 => fill(input, 12, gather, odd, block6, names, out)
+    _ => fill(input, 4, gather, odd, block2, names, out)
   }
 
   // The bytes the window could not cover, and the padding, go in one character
@@ -322,10 +323,7 @@ fn fill(
   gather : V128,
   odd : Bool,
   block : (V128) -> V128,
-  first_names : V128,
-  second_names : V128,
-  bucket_names : V128,
-  offset_names : V128,
+  names : Naming,
   out : FixedArray[Byte],
 ) -> Int32 {
   let keep = vector(
@@ -344,7 +342,6 @@ fn fill(
       },
     ),
   )
-  let one = @v128.i8x16_splat(1)
   let mut rest = input
   let mut blocks = 0
   while true {
@@ -359,25 +356,22 @@ fn fill(
           )
         }
         let fields = block(lanes)
-        // The run of a value: the group it falls in, plus one for each boundary
-        // it has passed inside that group.
-        let group = @v128.i8x16_shr_u(fields, 3)
-        let class = @v128.i8x16_add(
-          @v128.i8x16_add(
-            @v128.i8x16_swizzle(bucket_names, group),
-            @v128.v128_and_(
-              @v128.i8x16_ge_u(fields, @v128.i8x16_swizzle(first_names, group)),
-              one,
-            ),
-          ),
-          @v128.v128_and_(
-            @v128.i8x16_ge_u(fields, @v128.i8x16_swizzle(second_names, group)),
-            one,
-          ),
-        )
+        // A tail of one run is one compare; a tail of several is a saturating
+        // subtract, because each of its values has to reach its own entry.
+        let class = if names.single {
+          @v128.v128_or_(
+            @v128.v128_and_(@v128.i8x16_ge_u(fields, names.at), names.one),
+            @v128.v128_and_(@v128.i8x16_lt_u(fields, names.head), names.fifteen),
+          )
+        } else {
+          @v128.v128_or_(
+            @v128.i8x16_sub_sat_u(fields, names.below),
+            @v128.v128_and_(@v128.i8x16_lt_u(fields, names.head), names.fifteen),
+          )
+        }
         let text = @v128.i8x16_add(
           fields,
-          @v128.i8x16_swizzle(offset_names, class),
+          @v128.i8x16_swizzle(names.table, class),
         )
         @v128.v128_store(out, blocks * 32, @v128.i16x8_extend_low_i8x16_u(text))
         @v128.v128_store(
