@@ -12,4 +12,5 @@ import {
 // so a change on either side shows up as a failing test.
 import {
   "moonbitlang/core/encoding/base64" @core64,
+  "moonbitlang/core/bench",
 } for "test"

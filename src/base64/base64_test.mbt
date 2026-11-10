@@ -273,6 +273,71 @@ test "whitespace skips only the four ASCII blanks" {
 }
 
 ///|
+/// A long body of every byte value and then some, so a window that read the wrong
+/// part of the input has nowhere to hide.
+fn long_body(n : Int32) -> Bytes {
+  let out = Array::make(n, b'\x00')
+  let mut state = 987654321U
+  for i in 0..<n {
+    state = state * 1103515245U + 12345U
+    out[i] = (i % 251).to_byte() ^ (state >> 16).reinterpret_as_int().to_byte()
+  }
+  Bytes::from_array(out)
+}
+
+///|
+/// Decoding a body long enough to be read sixteen characters at a time must give
+/// back the bytes the encoder started from, through both faces and both
+/// alphabets, at a length that leaves a partial group at the end and at one that
+/// does not.
+test "a long body survives the round trip through every face" {
+  for kind in [@base64.Std, @base64.Url] {
+    for n in [4096, 4097, 4098, 65536] {
+      let input = long_body(n)
+      for padding in [true, false] {
+        let text = @base64.encode(input[:], kind~, padding~)
+        assert_eq(@base64.decode(text[:], kind~), input)
+        assert_eq(
+          @base64.decode_bytes(
+            @base64.encode_bytes(input[:], kind~, padding~)[:],
+            kind~,
+          ),
+          input,
+        )
+        assert_eq(@base64.decode_lossy(text[:], kind~), input)
+      }
+    }
+  }
+}
+
+///|
+/// A typo in a long body is refused, and refused at its own index — the fast path
+/// stops where it can go no further and the character loop names the position.
+test "a typo in a long body is blamed at its index" {
+  let input = long_body(6000)
+  let text = @base64.encode(input[:])
+  for index in [0, 15, 16, 17, 4000, 7999] {
+    let broken = StringBuilder()
+    let mut at = 0
+    for c in text {
+      broken.write_char(if at == index { '*' } else { c })
+      at = at + 1
+    }
+    let blamed = try {
+      ignore(@base64.decode(broken.to_string()[:]))
+      -1
+    } catch {
+      @moonbase.Bad(at~, char~) => {
+        ignore(char)
+        at
+      }
+      _ => -2
+    }
+    assert_eq(blamed, index)
+  }
+}
+
+///|
 /// A `=` says where the input ends, so a character after it is a lie about the
 /// length — whether or not four of them follow. A reader that takes four
 /// characters at a time has to stop at the `=` as well, or the lie is only caught

@@ -99,6 +99,56 @@ pub fn unpack(
   strict~ : Bool = false,
   whitespace~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
+  unpack_from(
+    input,
+    bits,
+    lookup,
+    lossy,
+    padding?,
+    strict~,
+    whitespace~,
+    wide=true,
+  )
+}
+
+///|
+/// The same decode without the sixteen-wide prefix — the definition that path is
+/// measured against, and what a test compares it with.
+pub fn unpack_scalar(
+  input : StringView,
+  bits : Int32,
+  lookup : Array[Int32],
+  lossy : Bool,
+  padding? : Bool,
+  strict~ : Bool = false,
+  whitespace~ : Bool = false,
+) -> Bytes raise @moonbase.Malformed {
+  unpack_from(
+    input,
+    bits,
+    lookup,
+    lossy,
+    padding?,
+    strict~,
+    whitespace~,
+    wide=false,
+  )
+}
+
+///|
+/// The decode both faces run: a sixteen-wide prefix when the alphabet and the
+/// input allow it, then the character loop for everything the prefix could not
+/// take.
+fn unpack_from(
+  input : StringView,
+  bits : Int32,
+  lookup : Array[Int32],
+  lossy : Bool,
+  padding? : Bool,
+  strict~ : Bool = false,
+  whitespace~ : Bool = false,
+  wide~ : Bool,
+) -> Bytes raise @moonbase.Malformed {
   // One allocation, sized by the widest the input could decode to, instead of a
   // growable array: this loop writes a byte whenever the accumulator fills, and
   // growing for that turned out to be a fifth of what the whole decode cost.
@@ -114,6 +164,16 @@ pub fn unpack(
   let mut first_pad = -1
   let mut last = -1
   let mut i = 0
+  // Sixteen characters at a time first. A block that is not entirely alphabet —
+  // a `=`, a blank, a typo, the last short window — stops the prefix at that
+  // index, which is where the loop below picks up, so an error keeps the position
+  // the scalar rules give it.
+  if wide && bulk {
+    let (consumed, bytes) = unpack_ascii(input, lookup, out)
+    i = consumed
+    written = bytes
+    taken = consumed
+  }
   while i < input.length() {
     // Four characters at a time when they are four plain characters of a
     // six-bit alphabet: twenty-four bits become three bytes with no
@@ -226,11 +286,23 @@ pub fn unpack_bytes(
   strict~ : Bool = false,
   whitespace~ : Bool = false,
 ) -> Bytes raise @moonbase.Malformed {
-  let out = StringBuilder()
+  // The bytes become code units one for one, so the UTF-16 buffer can be written
+  // straight instead of growing a string a character at a time. A byte above 0x7F
+  // stays a code unit of its own value — still valid UTF-16 — and the character
+  // loop refuses it exactly where the string face would.
+  let out = FixedArray::make(input.length() * 2, b'\x00')
   for i in 0..<input.length() {
-    out.write_char(input[i].to_int().unsafe_to_char())
+    out[i * 2] = input[i]
   }
-  unpack(out.to_string(), bits, lookup, lossy, padding?, strict~, whitespace~)
+  unpack(
+    out.unsafe_reinterpret_as_bytes().to_unchecked_string(),
+    bits,
+    lookup,
+    lossy,
+    padding?,
+    strict~,
+    whitespace~,
+  )
 }
 
 ///|
