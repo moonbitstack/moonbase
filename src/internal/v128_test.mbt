@@ -134,3 +134,33 @@ test "every shipped alphabet takes the vector path" {
     }
   }
 }
+
+///|
+/// Every length from zero to forty, and a window either side of every multiple
+/// of sixteen: the packer cuts a window at a fixed stride, so a length that is
+/// not a multiple of it is where a window that read past its own end shows up.
+test "every length packs the same characters through both paths" {
+  let lengths : Array[Int32] = []
+  for n in 0..<40 {
+    lengths.push(n)
+  }
+  for n in [47, 48, 49, 63, 64, 65, 79, 80, 81, 95, 96, 97, 191, 192, 193] {
+    lengths.push(n)
+  }
+  for bits in widths {
+    for digits in alphabets {
+      if digits.length() != 1 << bits {
+        continue
+      }
+      for n in lengths {
+        let input = probe(n)
+        for pad in [true, false] {
+          assert_eq(
+            @internal.pack(input[:], bits, digits, pad),
+            @internal.pack_scalar(input[:], bits, digits, pad),
+          )
+        }
+      }
+    }
+  }
+}

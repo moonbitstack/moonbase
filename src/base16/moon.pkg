@@ -11,4 +11,5 @@ import {
 // so a change on either side shows up as a failing test.
 import {
   "moonbitlang/core/encoding/hex" @corehex,
+  "moonbitlang/core/bench",
 } for "test"

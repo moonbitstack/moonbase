@@ -168,3 +168,57 @@ test "whitespace folds a dump and still refuses the rest" {
   }
   assert_true(refused)
 }
+
+///|
+/// A long input of every byte value and then some.
+fn long_body(n : Int32) -> Bytes {
+  let out = Array::make(n, b'\x00')
+  let mut state = 987654321U
+  for i in 0..<n {
+    state = state * 1103515245U + 12345U
+    out[i] = (i % 251).to_byte() ^ (state >> 16).reinterpret_as_int().to_byte()
+  }
+  Bytes::from_array(out)
+}
+
+///|
+/// A byte is two characters on its own, so an encoding read sixteen bytes at a
+/// time has to give the same text as the same bytes encoded one at a time and
+/// joined — at any length, and around every multiple of a window.
+test "a long input encodes as the same characters as its bytes" {
+  for kind in [@base16.Lower, @base16.Upper] {
+    for n in [1, 15, 16, 17, 31, 32, 33, 4096, 65537] {
+      let input = long_body(n)
+      let whole = @base16.encode(input[:], kind~)
+      let parts = StringBuilder()
+      for i in 0..<input.length() {
+        parts.write_string(
+          @base16.encode(input.unsafe_view(start=i, end=i + 1), kind~),
+        )
+      }
+      assert_eq(whole, parts.to_string())
+      assert_eq(@base16.decode(whole[:]), input)
+    }
+  }
+}
+
+///|
+/// The colon form is the same digits with a separator, so it has to agree with
+/// the plain one on a long input too.
+test "a long fingerprint is the plain encoding with colons" {
+  let input = long_body(4096)
+  for kind in [@base16.Lower, @base16.Upper] {
+    let plain = @base16.encode(input[:], kind~)
+    let colons = @base16.encode_colons(input[:], kind~)
+    let expected = StringBuilder()
+    for i in 0..<input.length() {
+      if i > 0 {
+        expected.write_char(':')
+      }
+      expected.write_char(plain[i * 2].unsafe_to_char())
+      expected.write_char(plain[i * 2 + 1].unsafe_to_char())
+    }
+    assert_eq(colons, expected.to_string())
+    assert_eq(@base16.decode_lossy(colons[:]), input)
+  }
+}
