@@ -119,8 +119,13 @@ pub fn unpack(
     // six-bit alphabet: twenty-four bits become three bytes with no
     // accumulator, no inner loop and no per-character mask. Anything else — a
     // blank, a `=`, a character outside the alphabet, the tail — falls through
-    // to the loop below, which is still the only place the rules live.
-    if bulk && i + 4 <= input.length() && out.length() - written >= 4 {
+    // to the loop below, which is still the only place the rules live. A `=`
+    // already passed also stops it: the input has said where it ends, and a
+    // character after that is a lie about the length the loop has to rule on.
+    if bulk &&
+      first_pad < 0 &&
+      i + 4 <= input.length() &&
+      out.length() - written >= 4 {
       let c0 = input[i].to_int()
       let c1 = input[i + 1].to_int()
       let c2 = input[i + 2].to_int()

@@ -271,3 +271,21 @@ test "whitespace skips only the four ASCII blanks" {
     assert_true(refused)
   }
 }
+
+///|
+/// A `=` says where the input ends, so a character after it is a lie about the
+/// length — whether or not four of them follow. A reader that takes four
+/// characters at a time has to stop at the `=` as well, or the lie is only caught
+/// when the tail happens to be shorter than a run.
+test "a character after the padding is refused at its index" {
+  for text in ["Zm9v=YWJj", "Zm9v=YWJjZGVm", "QUJD=REVG", "AAAA=AAAABBBB"] {
+    let blamed = try {
+      ignore(@base64.decode(text))
+      -1
+    } catch {
+      @moonbase.Padding(at~) => at
+      _ => -2
+    }
+    assert_eq(blamed, 5)
+  }
+}
