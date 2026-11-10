@@ -128,5 +128,8 @@ assert_eq(@multibase.decode("zKJfFLz7PRba"), b"moonbase")
 - `decode_lossy` returns `b""` when the input cannot be read at all. It cannot tell a
   typo from an unimportant character; when the body has to be right, use `decode` with
   `whitespace=true`.
+- `encode` and `decode` take the whole body, whatever its size — there is nothing to gain
+  from chunking it by hand. `sink()` and `source()` are for a transport that hands you
+  pieces, not for size.
 - A `Malformed` carries `at` (the index), and `char` for `Bad`. The index is the
   position in the whole input, even after chunks have been fed to a `source()`.

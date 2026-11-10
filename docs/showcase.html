@@ -108,6 +108,14 @@
         demo</a> shows the finished strings; this page shows the groups.</p>
         <p>Because the group never crosses a byte boundary in base2, base8 and base16, those three
         are the ones a stream can encode as it reads: nothing has to wait for the next chunk.</p>
+        <p>Cutting the groups is the inner loop of the whole library, so it is written twice: once
+        a character at a time, which is the definition, and once sixteen characters at a time on
+        the wasm backend. The wide path cuts the groups of a 128-bit lane with shifts and masks,
+        names each one by a lookup in the alphabet — a lane-index swizzle for a hexadecimal nibble,
+        a table for base64's five runs of characters — and writes sixteen code units in one store.
+        A window that holds something the alphabet does not is refused before anything is written,
+        and the character-at-a-time loop finishes the input from that index: the wide path only
+        avoids work, it never decides a rule of its own.</p>
       </section>
 
       <section id="division">

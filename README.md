@@ -124,6 +124,18 @@ The big-integer families — base10, base36, base58, base62 — have no streamin
 purpose: their first digit depends on the last byte, so there is nothing to emit until
 the input ends.
 
+## Large bodies
+
+The bit-packing families are written for payloads, not only for examples. On the wasm
+backend, where a 128-bit lane is one instruction, encoding cuts sixteen characters a step
+for base2, base8, base16, base32 and base64, and decoding does the same for base64 and
+base64url. A window that holds something the alphabet does not — a `=`, a blank, a typo —
+stops the wide path at that character, and the ordinary loop takes over from there. So a
+typo in the middle of a body is still refused at the index it broke at, and `whitespace`
+and `decode_lossy` read exactly what they read before.
+
+Nothing changes at the interfaces: a body of any size is one call.
+
 ## Whole numbers
 
 base36, base58 and base62 add `encode_int` / `decode_int`, for values where leading
