@@ -1,0 +1,21 @@
+// The driver `scripts/check_interop.py` talks to: one codec, one direction, and
+// as many cases as the command line holds.
+import {
+  "moonbitstack/moonbase",
+  "moonbitstack/moonbase/base2",
+  "moonbitstack/moonbase/base8",
+  "moonbitstack/moonbase/base10",
+  "moonbitstack/moonbase/base16",
+  "moonbitstack/moonbase/base32",
+  "moonbitstack/moonbase/base36",
+  "moonbitstack/moonbase/base45",
+  "moonbitstack/moonbase/base58",
+  "moonbitstack/moonbase/base62",
+  "moonbitstack/moonbase/base64",
+  "moonbitstack/moonbase/base85",
+  "moonbitstack/moonbase/bech32",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")
