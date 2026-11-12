@@ -110,9 +110,12 @@ pub fn name(base : Base) -> String {
 ///|
 /// The encoding a prefix stands for, or `None` if this module does not write it.
 ///
-/// `NUL`, `1`, `Q` and `/` are reserved by the table and are not encodings;
-/// `p` is proquint, which is a word encoding rather than a base, and is the one
-/// entry left out.
+/// Two rows of the table are left out. `NUL` is `identity`, the row that passes
+/// the payload through unchanged: a multibase string is text and a payload is
+/// bytes, so that row cannot be served by a function that takes bytes and
+/// returns a string without losing whatever the payload holds above ASCII. `p`
+/// is proquint, a spelling in pronounceable words rather than in digits.
+/// `1`, `Q` and `/` are reserved by the table and stand for nothing.
 pub fn of_prefix(mark : Char) -> Base? {
   let code = mark.to_int()
   Some(

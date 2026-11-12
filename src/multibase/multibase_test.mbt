@@ -170,9 +170,9 @@ test "every prefix in the table maps back to its entry, and no two collide" {
 }
 
 ///|
-/// The four reserved code points and proquint are the entries this module does
-/// not write, and a string starting with one of them is a failure at index zero
-/// rather than a guess.
+/// The identity row, proquint and the three code points the table reserves are
+/// the entries this module does not write, and a string starting with one of
+/// them is a failure at index zero rather than a guess.
 test "a reserved or unsupported prefix is rejected where it stands" {
   for mark in ['\u{0}', '1', 'Q', '/', 'p'] {
     let text = mark.to_string() + "abc"
