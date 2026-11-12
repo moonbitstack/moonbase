@@ -59,9 +59,13 @@ pub fn encode_bytes(
 ///|
 /// Decode base85 back to bytes.
 ///
-/// Ascii85 accepts `z` for a zero group and a short final group; Z85 requires a
-/// length that is a multiple of five; `Ipv6` reads a 128-bit number and always
-/// gives back sixteen bytes.
+/// Ascii85 is read the way Adobe's filter is specified: `z` is a group of four
+/// zero bytes, `y` is the eight groups PostScript abbreviates the same way, any
+/// whitespace between digits is the writer's line breaking rather than data, and
+/// the `<~` … `~>` markers a PostScript stream wraps the payload with are not
+/// part of it. Z85 requires a length that is a multiple of five and takes
+/// nothing else, because ZeroMQ's frame has no short group and no shortcuts.
+/// `Ipv6` reads a 128-bit number and always gives back sixteen bytes.
 pub fn decode(
   input : StringView,
   kind~ : Kind = Ascii85,
@@ -69,7 +73,7 @@ pub fn decode(
   match kind {
     Ipv6 => address_decode(input)
     Z85 => groups(input, z85_lookup, false)
-    Ascii85 => groups(input, ascii85_lookup, true)
+    Ascii85 => ascii85_decode(input, false)
   }
 }
 
@@ -83,9 +87,17 @@ pub fn decode_bytes(
 }
 
 ///|
-/// Decode, skipping anything outside the alphabet — the newlines Adobe wraps a
-/// PostScript stream with, the spaces in a pasted string.
+/// Decode, skipping anything outside the alphabet — the line breaks Adobe wraps
+/// a PostScript stream with, the spaces in a pasted string, a marker a copy lost
+/// on the way.
 pub fn decode_lossy(input : StringView, kind~ : Kind = Ascii85) -> Bytes {
+  if kind == Ascii85 {
+    return try ascii85_decode(input, true) catch {
+      _ => b""
+    } noraise {
+      bytes => bytes
+    }
+  }
   let table = match kind {
     Z85 => z85_lookup
     Ipv6 => ipv6_lookup
@@ -94,9 +106,7 @@ pub fn decode_lossy(input : StringView, kind~ : Kind = Ascii85) -> Bytes {
   let kept = StringBuilder()
   for i in 0..<input.length() {
     let code = input[i].to_int()
-    if kind == Ascii85 && code == 122 {
-      kept.write_char('z')
-    } else if code >= 0 && code < 128 && table[code] >= 0 {
+    if code >= 0 && code < 128 && table[code] >= 0 {
       kept.write_char(input[i].unsafe_to_char())
     }
   }
@@ -251,6 +261,113 @@ fn groups(
 }
 
 ///|
+/// Ascii85's own reader.
+///
+/// It walks the input once, so every failure names the index the caller has, and
+/// it is the only reader that has to know about whitespace: Adobe's filter
+/// says the line breaks were put there by whoever wrote the stream, which is why
+/// every decoder of it skips them instead of refusing the body.
+///
+/// `lossy` turns every character outside the alphabet into nothing, which is
+/// what [`decode_lossy`](#decode_lossy) is.
+fn ascii85_decode(
+  input : StringView,
+  lossy : Bool,
+) -> Bytes raise @moonbase.Malformed {
+  let n = input.length()
+  let mut from = 0
+  let mut to = n
+  // PostScript wraps the payload: `<~` before it and `~>` after it. A body
+  // without the opening marker is read as it stands, which is how every other
+  // Ascii85 writer spells it.
+  if n >= 4 && input[0] == '<' && input[1] == '~' {
+    if input[n - 1] != '>' || input[n - 2] != '~' {
+      raise Truncated(at=n)
+    }
+    from = 2
+    to = n - 2
+  }
+  let out : Array[Byte] = []
+  let pending : Array[Int32] = []
+  let mut at = from
+  let mut i = from
+  while i < to {
+    let code = input[i].to_int()
+    if is_blank(code) {
+      i = i + 1
+      continue
+    }
+    // `z` is four zero bytes and `y` is thirty-two; PostScript defines both, and
+    // neither can stand inside a group.
+    if code == 122 || code == 121 {
+      if pending.length() != 0 {
+        raise Bad(at=i, char=input[i].unsafe_to_char())
+      }
+      let zeros = if code == 122 { 1 } else { 8 }
+      for _ in 0..<zeros {
+        out.push(b'\x00')
+        out.push(b'\x00')
+        out.push(b'\x00')
+        out.push(b'\x00')
+      }
+      i = i + 1
+      at = i
+      continue
+    }
+    let digit = if code >= 0 && code < 128 { ascii85_lookup[code] } else { -1 }
+    if digit < 0 {
+      if lossy {
+        i = i + 1
+        continue
+      }
+      raise Bad(at=i, char=input[i].unsafe_to_char())
+    }
+    if pending.length() == 0 {
+      at = i
+    }
+    pending.push(digit)
+    if pending.length() == 5 {
+      let value = fold_group(pending, 5)
+      if value > 0xffffffffL {
+        raise Bad(at~, char=input[at].unsafe_to_char())
+      }
+      for k in 0..<4 {
+        out.push(((value >> ((3 - k) * 8)) & 0xffL).to_int().to_byte())
+      }
+      pending.clear()
+      at = i + 1
+    }
+    i = i + 1
+  }
+  let rest = pending.length()
+  if rest > 0 {
+    if rest == 1 {
+      raise Truncated(at~)
+    }
+    let value = fold_group(pending, rest)
+    if value > 0xffffffffL {
+      raise Bad(at~, char=input[at].unsafe_to_char())
+    }
+    for k in 0..<(rest - 1) {
+      out.push(((value >> ((3 - k) * 8)) & 0xffL).to_int().to_byte())
+    }
+  }
+  Bytes::from_array(out)
+}
+
+///|
+/// The whitespace an Ascii85 body may be broken with: the four ASCII blanks and
+/// the two the character set puts beside them.
+fn is_blank(code : Int32) -> Bool {
+  code == 32 ||
+  code == 9 ||
+  code == 10 ||
+  code == 13 ||
+  code == 11 ||
+  code == 12
+}
+
+///|
 /// A streaming encoder: four bytes are written as five characters, so up to
 /// three bytes wait for the next chunk. `kind=Ipv6` reads its input as one
 /// number and therefore buffers the whole payload.
@@ -336,6 +453,12 @@ pub fn Sink::finish(self : Sink) -> String raise @moonbase.Malformed {
 /// A streaming decoder: five characters are four bytes; a partial group waits.
 /// `kind=Ipv6` buffers the whole input, because the number is only known once
 /// the last digit has arrived.
+///
+/// It reads the body. The `<~` and `~>` a PostScript stream wraps the body with
+/// are decided by both ends of the input at once, which a source does not have:
+/// `~>` is only a marker if the input stops there, and until then it could be
+/// anything. A caller holding a wrapped stream strips the two markers itself, or
+/// hands the whole body to [`decode`](#decode), which reads both ends.
 pub struct Source {
   priv kind : Kind
   priv pending : Array[Int32]
@@ -371,14 +494,22 @@ pub fn Source::write(
     let at = self.seen
     self.seen = self.seen + 1
     let code = input[i].to_int()
-    if self.kind == Ascii85 && code == 122 {
+    // The one-shot reader skips whitespace because Adobe's filter says line
+    // breaks are the writer's business; a source has to read the same bodies.
+    if self.kind == Ascii85 && is_blank(code) {
+      continue
+    }
+    if self.kind == Ascii85 && (code == 122 || code == 121) {
       if self.pending.length() != 0 {
-        raise Bad(at~, char='z')
+        raise Bad(at~, char=input[i].unsafe_to_char())
       }
-      self.out.push(b'\x00')
-      self.out.push(b'\x00')
-      self.out.push(b'\x00')
-      self.out.push(b'\x00')
+      let zeros = if code == 122 { 1 } else { 8 }
+      for _ in 0..<zeros {
+        self.out.push(b'\x00')
+        self.out.push(b'\x00')
+        self.out.push(b'\x00')
+        self.out.push(b'\x00')
+      }
       continue
     }
     let digit = if code >= 0 && code < 128 { table[code] } else { -1 }
