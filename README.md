@@ -97,6 +97,17 @@ assert_eq(@base64.decode("bW9v\nbmJh\nc2U=", whitespace=true), data)
 `decode_lossy` is the other end: it skips everything the alphabet does not hold,
 which is what a PEM body and a `ab:cd:ef` fingerprint need.
 
+Ascii85 needs neither switch, because the format itself settles the question: a
+PostScript stream wraps its body in `<~` and `~>`, breaks the lines wherever the
+writer felt like it, and spells thirty-two zero bytes as a single `y`. All three
+are read as part of the encoding, so a body copied out of a PDF decodes as it
+stands, and `whitespace` is not offered where it would mean nothing.
+
+```moonbit
+assert_eq(@base85.decode("<~9jqo^\nARTY*~>"), b"Man easy")
+assert_eq(@base85.decode("y").length(), 32)
+```
+
 ## Streaming
 
 The bit-packing families — base2, base8, base16, base32, base45, base64, base85 —

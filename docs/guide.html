@@ -252,6 +252,15 @@ abcdef</div>
 @base64.decode("bW9v\nbmJh\nc2U=")                   <span class="cmt">// Bad(at=4, char='\n')</span></code></pre></div>
         <div class="output">b"moonbase"
 Bad(at=4, char='\n')</div>
+        <p>Ascii85 answers the same question in the format itself. A PostScript body is wrapped
+        in <code>&lt;~</code> and <code>~&gt;</code>, its writer breaks the lines wherever it
+        likes, and thirty-two zero bytes are spelled as one <code>y</code>. All three belong to
+        the encoding rather than to the transport, so the plain reader takes them and base85
+        offers no <code>whitespace</code> switch at all.</p>
+        <div class="example"><pre><code>@base85.decode("&lt;~9jqo^\nARTY*~&gt;")   <span class="cmt">// b"Man easy"</span>
+@base85.decode("y").length()                   <span class="cmt">// 32</span></code></pre></div>
+        <div class="output">b"Man easy"
+32</div>
       </section>
 
       <section id="strict">

@@ -125,6 +125,10 @@ assert_eq(@multibase.decode("zKJfFLz7PRba"), b"moonbase")
   `123456789UL`, not `123456789`.
 - Only base32 and base64 take `padding` and `strict`. base45 has no padding character,
   and its alphabet includes the space, so `whitespace` is not offered there.
+- Ascii85 is read the way PostScript writes it: `<~` and `~>` frame the body, `y` is
+  thirty-two zero bytes, and the line breaks in between are not data. base85 therefore
+  has no `whitespace` switch. Its streaming `source()` reads the body only, so strip the
+  two markers before feeding a wrapped stream to it.
 - `decode_lossy` returns `b""` when the input cannot be read at all. It cannot tell a
   typo from an unimportant character; when the body has to be right, use `decode` with
   `whitespace=true`.
