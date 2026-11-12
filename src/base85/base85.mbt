@@ -2,18 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 ///|
-/// Which of the three base85 spellings is in use.
+/// Which of the four base85 spellings is in use.
 ///
 /// Ascii85 is Adobe's: it lives inside PostScript and PDF, writes a group of
 /// four zero bytes as a single `z`, and lets the last group be short. Z85 is
 /// ZeroMQ's (RFC 32): the same five-for-four arithmetic over an alphabet safe to
 /// put inside a string literal, but with no shortcuts, so the length must be a
-/// multiple of four. `Ipv6` is RFC 1924's: the input is one 128-bit number, not a
-/// run of four-byte groups.
+/// multiple of four. `B85` is the RFC 1924 alphabet over the same four-byte
+/// groups, without the `z` and with a short last group — the spelling git writes
+/// in a binary patch. `Ipv6` is RFC 1924's other reading of that alphabet: the
+/// input is one 128-bit number, not a run of groups.
 #derive(Eq, Debug)
 pub(all) enum Kind {
   Ascii85
   Z85
+  B85
   Ipv6
 }
 
@@ -29,8 +32,8 @@ pub extend Kind with Debug::{to_repr}
 /// Fails only for the two kinds that know how long their input is: Z85 with a
 /// length that is not a multiple of four, because ZeroMQ's frame is four bytes
 /// and it defines no short tail; and `Ipv6` with a length that is not sixteen,
-/// because RFC 1924 is about addresses. Ascii85 shortens its last group
-/// instead, so it encodes whatever it is given.
+/// because RFC 1924 is about addresses. Ascii85 and `B85` shorten their last
+/// group instead, so they encode whatever they are given.
 pub fn encode(
   input : BytesView,
   kind~ : Kind = Ascii85,
@@ -44,6 +47,7 @@ pub fn encode(
       blocks(input, z85_digits, false)
     }
     Ascii85 => blocks(input, ascii85_digits, true)
+    B85 => blocks(input, ipv6_digits, false)
   }
 }
 
@@ -73,6 +77,7 @@ pub fn decode(
   match kind {
     Ipv6 => address_decode(input)
     Z85 => groups(input, z85_lookup, false)
+    B85 => groups(input, ipv6_lookup, true)
     Ascii85 => ascii85_decode(input, false)
   }
 }
@@ -100,6 +105,7 @@ pub fn decode_lossy(input : StringView, kind~ : Kind = Ascii85) -> Bytes {
   }
   let table = match kind {
     Z85 => z85_lookup
+    B85 => ipv6_lookup
     Ipv6 => ipv6_lookup
     Ascii85 => ascii85_lookup
   }
@@ -210,43 +216,40 @@ fn write_group(
 
 ///|
 /// Decode a run of five-character groups, four bytes each.
+///
+/// `tails` says whether the last group may be short, which it may where the
+/// encoder is allowed to write one: a group of `n` bytes is `n + 1` characters,
+/// so the result is `n` bytes. A lone character is `n = 0` and is refused either
+/// way.
 fn groups(
   input : StringView,
   table : Array[Int32],
-  short : Bool,
+  tails : Bool,
 ) -> Bytes raise @moonbase.Malformed {
   let out : Array[Byte] = []
   let n = input.length()
   let mut i = 0
   while i < n {
-    if short && input[i].to_int() == 122 {
-      out.push(b'\x00')
-      out.push(b'\x00')
-      out.push(b'\x00')
-      out.push(b'\x00')
-      i = i + 1
-      continue
-    }
     let rest = n - i
     let length = if rest >= 5 { 5 } else { rest }
-    if length < 5 && (!short || length < 2) {
+    if length < 5 && (!tails || length < 2) {
       raise Truncated(at=i)
     }
     let mut value = 0L
     for k in 0..<5 {
-      let code = if k < length { input[i + k].to_int() } else { 117 }
+      if k >= length {
+        // A short group is completed with the largest digit, the way every
+        // decoder of this family does it: it makes an overflowing tail
+        // impossible to accept silently.
+        value = value * 85L + 84L
+        continue
+      }
+      let code = input[i + k].to_int()
       let digit = if code >= 0 && code < 128 { table[code] } else { -1 }
       if digit < 0 {
-        if k < length {
-          raise Bad(at=i + k, char=input[i + k].unsafe_to_char())
-        }
-        // A short group is completed with the largest digit, the way every
-        // Ascii85 decoder does it: it makes an overflowing tail impossible to
-        // accept silently.
-        value = value * 85L + 84L
-      } else {
-        value = value * 85L + digit.to_int64()
+        raise Bad(at=i + k, char=input[i + k].unsafe_to_char())
       }
+      value = value * 85L + digit.to_int64()
     }
     if value > 0xffffffffL {
       raise Bad(at=i, char=input[i].unsafe_to_char())
@@ -400,6 +403,7 @@ pub fn Sink::write(self : Sink, input : BytesView) -> Unit {
     if self.pending.length() == 4 {
       let digits = match self.kind {
         Z85 => z85_digits
+        B85 => ipv6_digits
         _ => ascii85_digits
       }
       write_group(
@@ -436,13 +440,14 @@ pub fn Sink::finish(self : Sink) -> String raise @moonbase.Malformed {
     if self.kind == Z85 {
       raise Truncated(at=self.pending.length())
     }
+    let digits = if self.kind == B85 { ipv6_digits } else { ascii85_digits }
     write_group(
       Bytes::from_array(self.pending)[:],
       0,
       self.pending.length(),
-      ascii85_digits,
+      digits,
       self.out,
-      true,
+      self.kind == Ascii85,
     )
     self.pending.clear()
   }
@@ -488,6 +493,7 @@ pub fn Source::write(
   }
   let table = match self.kind {
     Z85 => z85_lookup
+    B85 => ipv6_lookup
     _ => ascii85_lookup
   }
   for i in 0..<input.length() {

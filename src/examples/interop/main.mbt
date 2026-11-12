@@ -90,6 +90,7 @@ fn encode(
     "base64-url-pad" => @base64.encode(raw, kind=@base64.Url, padding=true)
     "base85" => @base85.encode(raw)
     "base85-z85" => @base85.encode(raw, kind=@base85.Z85)
+    "base85-b85" => @base85.encode(raw, kind=@base85.B85)
     "bech32" => @bech32.encode("moonbase", raw)
     _ => abort("interop: no codec named " + codec.to_owned())
   }
@@ -125,6 +126,7 @@ fn decode(
     "base64-url-pad" => @base64.decode(text, kind=@base64.Url, padding=true)
     "base85" => @base85.decode(text)
     "base85-z85" => @base85.decode(text, kind=@base85.Z85)
+    "base85-b85" => @base85.decode(text, kind=@base85.B85)
     "bech32" => @bech32.decode(text).data
     _ => abort("interop: no codec named " + codec.to_owned())
   }

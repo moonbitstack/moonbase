@@ -141,6 +141,14 @@ CODECS = [
         lambda text: base64.a85decode(text.encode("ascii")),
         go="base85",
     ),
+    # The RFC 1924 alphabet over four-byte groups, which is what a binary patch
+    # carries. Go's standard library has no such encoder, so only Python is
+    # asked about it.
+    Codec(
+        "base85-b85",
+        lambda raw: base64.b85encode(raw).decode(),
+        lambda text: base64.b85decode(text.encode("ascii")),
+    ),
 ]
 
 

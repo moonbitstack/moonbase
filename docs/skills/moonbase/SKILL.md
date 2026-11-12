@@ -115,6 +115,10 @@ assert_eq(@multibase.decode("zKJfFLz7PRba"), b"moonbase")
 
 ## Rules that catch people out
 
+- `base85` has four spellings: `Ascii85` (Adobe's filter, `z` for a zero group, `<~`/`~>` and
+  `y` read on the way in), `Z85` (ZeroMQ's frame, length a multiple of four, no tail), `B85`
+  (the RFC 1924 alphabet over four-byte groups, short tail, no `z`) and `Ipv6` (the same
+  alphabet read as one 128-bit number).
 - `base8` and `base2` are bit packings, not the octal or binary spelling of a number:
   `base8` takes three bits at a time across the whole stream, so it is not `printf "%o"`
   of each byte.

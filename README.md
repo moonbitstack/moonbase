@@ -65,6 +65,7 @@ assert_eq(@base32.encode(data[:], kind=@base32.Crockford), "DNQPYVK2C5SPA")
 assert_eq(@base16.encode(data[:], kind=@base16.Upper), "6D6F6F6E62617365")
 assert_eq(@base64.encode(data[:], padding=false), "bW9vbmJhc2U")
 assert_eq(@base85.encode(b"\x00\xff\x01\xfe"[:], kind=@base85.Z85), "0ri90")
+assert_eq(@base85.encode(data[:], kind=@base85.B85), "ZEtUGVqtS-")
 ```
 
 ## Reading what a format wrote
@@ -240,7 +241,7 @@ assert_eq(@bech32.decode_words("moonbase1d4hk7mnzv9ek2s84pra").hrp, "moonbase")
 | `base58` | multibase `z` | `Flickr` and `Ripple` alphabets, plus `encode_check` / `decode_check` |
 | `base62` | — | digits, upper, lower; short identifiers |
 | `base64` | RFC 4648 §4, §5 | `kind=Url` for tokens and file names; `decode_any` reads either alphabet |
-| `base85` | Adobe, ZeroMQ RFC 32, RFC 1924 | `kind=Ascii85`, `kind=Z85`, `kind=Ipv6` — four bytes in five characters, three ways |
+| `base85` | Adobe, ZeroMQ RFC 32, RFC 1924 | `kind=Ascii85`, `kind=Z85`, `kind=B85`, `kind=Ipv6` — four bytes in five characters, four ways |
 | `bech32` | BIP 173, BIP 350 | a human-readable prefix, five-bit groups and a BCH checksum; `kind=Bech32m` for version 1 and up |
 | `multibase` | multiformats | one prefix character, from `0` for base2 to a rocket for base256emoji |
 

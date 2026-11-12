@@ -28,6 +28,7 @@ pub fn source(kind? : Kind) -> Source
 pub(all) enum Kind {
   Ascii85
   Z85
+  B85
   Ipv6
 }
 pub fn Kind::equal(Self, Self) -> Bool

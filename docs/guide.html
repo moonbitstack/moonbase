@@ -97,23 +97,28 @@ bW9vbmJhc2U</div>
       <section id="variants">
         <h2>Variants</h2>
         <p>Variants are a named argument, not a new function. base16 switches case, base32 has four
-        alphabets, base58 three, base85 three, and base64 can switch alphabet or drop padding.</p>
+        alphabets, base58 three, base85 four, and base64 can switch alphabet or drop padding.</p>
         <div class="example"><pre><code>@base16.encode(data[:])                            <span class="cmt">// "6d6f6f6e62617365"</span>
 @base16.encode(data[:], kind=@base16.Upper)        <span class="cmt">// "6D6F6F6E62617365"</span>
 @base32.encode(data[:], kind=@base32.Hex)          <span class="cmt">// "DLNMURJ2C5PMA==="</span>
 @base32.encode(data[:], kind=@base32.Crockford)    <span class="cmt">// "DNQPYVK2C5SPA"</span>
 @base85.encode(data[:], kind=@base85.Z85)          <span class="cmt">// "zeTugvQTs?"</span>
+@base85.encode(data[:], kind=@base85.B85)          <span class="cmt">// "ZEtUGVqtS-"</span>
 @base64.encode(data[:], padding=false)             <span class="cmt">// "bW9vbmJhc2U"</span></code></pre></div>
         <div class="output">6d6f6f6e62617365
 6D6F6F6E62617365
 DLNMURJ2C5PMA===
 DNQPYVK2C5SPA
 zeTugvQTs?
+ZEtUGVqtS-
 bW9vbmJhc2U</div>
         <p>The two base32 alphabets that exist for people rather than for machines are
         <code>Crockford</code> — which leaves out <code>I</code>, <code>L</code>, <code>O</code> and
         <code>U</code>, and reads those back as the digits they look like — and <code>Z</code>,
         which puts the letters a word is likely to need at the cheap end.</p>
+        <p>base85's four spellings are one arithmetic over different alphabets. <code>B85</code> is
+        the RFC 1924 alphabet cut into four-byte groups with a short last group — the spelling a
+        binary patch carries — while <code>Ipv6</code> reads the same alphabet as one number.</p>
       </section>
 
       <section id="stream">
