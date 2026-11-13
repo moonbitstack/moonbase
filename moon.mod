@@ -1,6 +1,6 @@
 name = "moonbitstack/moonbase"
 
-version = "0.4.5"
+version = "0.5.0"
 
 readme = "README.md"
 
